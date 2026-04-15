@@ -12,7 +12,7 @@ VECTOR_DB_DIR = os.path.join(BASE_DIR, "vector_db")
 os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(VECTOR_DB_DIR, exist_ok=True)
 
-OLLAMA_MODEL = "phi3"  # Smaller, faster model for better speed
+OLLAMA_MODEL = "gemma3:4b"
 
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
