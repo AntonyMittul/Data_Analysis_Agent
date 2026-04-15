@@ -29,6 +29,7 @@ def is_global_question(question: str) -> bool:
 
 async def answer_question(question: str, file_name: str, session_id: str):
     cache_key = f"{file_name}_{question}"
+    full_response = ""
 
     if cache_key in response_cache:
         yield response_cache[cache_key]
@@ -49,7 +50,8 @@ async def answer_question(question: str, file_name: str, session_id: str):
 
     # Dynamic K: more context for summaries
     # Dynamic K improvement
-    retriever.search_kwargs["k"] = 12 if is_global_question(question) else 6
+    if hasattr(retriever, "set_k"):
+        retriever.set_k(12 if is_global_question(question) else 6)
 
     docs = await retriever.ainvoke(question)
     if not docs:
