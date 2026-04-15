@@ -1,9 +1,10 @@
 from langchain_ollama import OllamaLLM
 import json
+from app.config.settings import OLLAMA_MODEL
 
 # ✅ Optimized LLM config
 llm = OllamaLLM(
-    model="phi3",
+    model=OLLAMA_MODEL,
     temperature=0.1,
     num_ctx=1024,
     num_predict=300
