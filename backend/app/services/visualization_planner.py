@@ -1,11 +1,12 @@
 from langchain_ollama import OllamaLLM
 import json
+from app.config.settings import OLLAMA_MODEL
 
 
 def plan_visualizations(dataset_profile):
 
     llm = OllamaLLM(
-        model="phi3",
+        model=OLLAMA_MODEL,
         temperature=0.1,
         num_predict=512,
         top_p=0.9,
