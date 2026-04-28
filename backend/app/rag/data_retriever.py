@@ -1,10 +1,11 @@
 from langchain_community.vectorstores import Chroma
 from app.rag.embeddings import get_embeddings
-from typing import List, Dict, Any
+from typing import List, Dict
 import json
 
 # In-memory cache for data vector stores
 data_vectorstores = {}
+data_signatures = {}
 
 
 def create_data_chunks(profile: Dict, charts: List[Dict], insights: str) -> List[str]:
@@ -54,26 +55,26 @@ def get_data_retriever(file_path: str, profile: Dict = None, charts: List[Dict] 
     clean_path = file_path.replace('/', '_').replace('\\', '_')
     collection_name = f"data_{clean_path}"
     
-    # If retriever is already in the in-memory cache, return it immediately
-    if collection_name in data_vectorstores:
-        return data_vectorstores[collection_name].as_retriever(search_type="similarity", search_kwargs={"k": 3})
+    if collection_name not in data_vectorstores:
+        data_vectorstores[collection_name] = Chroma(
+            persist_directory="vector_db",
+            embedding_function=get_embeddings(),
+            collection_name=collection_name
+        )
 
-    # Otherwise, load from disk or create a new one
-    vectorstore = Chroma(
-        persist_directory="vector_db",
-        embedding_function=get_embeddings(),
-        collection_name=collection_name
-    )
+    vectorstore = data_vectorstores[collection_name]
 
-    # If the vector store on disk is empty and we have data, populate it.
-    # This expensive embedding step will now only run once per file across application restarts.
-    if vectorstore._collection.count() == 0 and profile and charts is not None:
+    # Keep retriever context aligned with latest charts/insights.
+    if profile and charts is not None:
         chunks = create_data_chunks(profile, charts, insights or "")
-        if chunks:
+        signature = f"{profile.get('rows','')}|{len(profile.get('columns', []))}|{len(charts)}|{hash(insights or '')}"
+        if chunks and data_signatures.get(collection_name) != signature:
+            try:
+                vectorstore._collection.delete(where={})
+            except Exception:
+                pass
             vectorstore.add_texts(chunks)
             vectorstore.persist()
+            data_signatures[collection_name] = signature
 
-    data_vectorstores[collection_name] = vectorstore
     return vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 3})
-
-    return None
