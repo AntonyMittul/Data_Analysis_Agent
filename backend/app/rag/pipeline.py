@@ -70,6 +70,9 @@ async def rag_pipeline_stream(doc_id, question):
             yield chunk
         return
 
+    if hasattr(retriever, "set_k"):
+        retriever.set_k(8 if intent == "structured" else 6)
+
     # ---- RETRIEVE DOCS ----
     docs = await retriever.ainvoke(question)
     docs = [d for d in docs if len(d.page_content.strip()) > 50]
@@ -81,16 +84,17 @@ async def rag_pipeline_stream(doc_id, question):
         return
 
     # ---- LIMIT CONTEXT ----
-    MAX_CHUNKS = 3
-    MAX_CHARS = 2500
-    selected_docs, total_chars = [], 0
+    MAX_CHUNKS = 6
+    MAX_CONTEXT_TOKENS = 1400
+    selected_docs, total_tokens = [], 0
 
     for d in docs:
         content = d.page_content.strip()
-        if total_chars + len(content) > MAX_CHARS:
+        token_estimate = d.metadata.get("token_estimate", max(1, len(content) // 4))
+        if total_tokens + token_estimate > MAX_CONTEXT_TOKENS:
             break
         selected_docs.append(d)
-        total_chars += len(content)
+        total_tokens += token_estimate
         if len(selected_docs) >= MAX_CHUNKS:
             break
 

@@ -7,12 +7,13 @@ from app.memory.chat_memory import (
 )
 from app.rag.retriever import get_retriever
 from app.rag.generator import generate_answer_stream
+from app.config.settings import OLLAMA_MODEL
 
 # ================= LLM CONFIG =================
 # Increased num_ctx to 4096 to handle larger document contexts
 # Increased num_predict to 1024 to prevent truncated summaries
 llm = OllamaLLM(
-    model="phi3",
+    model=OLLAMA_MODEL,
     temperature=0.1,
     num_ctx=4096,   
     top_k=5,           
@@ -29,6 +30,7 @@ def is_global_question(question: str) -> bool:
 
 async def answer_question(question: str, file_name: str, session_id: str):
     cache_key = f"{file_name}_{question}"
+    full_response = ""
 
     if cache_key in response_cache:
         yield response_cache[cache_key]
@@ -49,7 +51,8 @@ async def answer_question(question: str, file_name: str, session_id: str):
 
     # Dynamic K: more context for summaries
     # Dynamic K improvement
-    retriever.search_kwargs["k"] = 12 if is_global_question(question) else 6
+    if hasattr(retriever, "set_k"):
+        retriever.set_k(12 if is_global_question(question) else 6)
 
     docs = await retriever.ainvoke(question)
     if not docs:
