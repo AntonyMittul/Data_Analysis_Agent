@@ -1,8 +1,9 @@
 from app.rag.business_prompt import build_business_prompt
 from langchain_ollama import OllamaLLM
+from app.config.settings import OLLAMA_MODEL
 
 llm = OllamaLLM(
-    model="phi3",
+    model=OLLAMA_MODEL,
     temperature=0,
     top_k=1,
     repeat_penalty=1.0,
@@ -17,4 +18,3 @@ async def generate_answer_stream(context: str, question: str):
             yield chunk
     except Exception as e:
         yield f"⚠️ Streaming error: {str(e)}"
-

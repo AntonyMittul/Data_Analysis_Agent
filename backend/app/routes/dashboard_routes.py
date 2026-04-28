@@ -18,6 +18,7 @@ def generate_insights_background(file_path, profile, charts):
         print(f"[INSIGHTS STARTED] {file_path}")
 
         insights = generate_insights(profile, charts)
+        dataset_sessions[file_path]["insights"] = insights
 
         print(f"[INSIGHTS GENERATED] {insights[:200]}")
 

@@ -6,6 +6,7 @@ from app.memory.chat_memory import (
     create_session
 )
 from app.services.insight_generator import summarize_charts
+from app.services.dashboard_retriever import retrieve_dashboard_context
 from cachetools import LRUCache
 from app.config.settings import OLLAMA_MODEL
 import asyncio
@@ -48,9 +49,18 @@ async def stream_data_answer(question: str, file_path: str, session_id: str, con
     llm_context = structured_context.get("llm_context", "")
 
     charts = context.get("charts", [])
-    chart_summary = summarize_charts(charts)[:3]
+    chart_summary = summarize_charts(charts)
 
     insights = context.get("insights", "")
+    profile = context.get("profile", {})
+
+    retrieved_context = retrieve_dashboard_context(
+        question=question,
+        profile=profile,
+        charts=charts,
+        insights=insights,
+        k=4
+    )
 
     # ================= FAST PATH =================
     question_lower = question.lower()
@@ -83,6 +93,9 @@ DO NOT hallucinate.
 
 ================ INSIGHTS ================
 {insights}
+
+================ RETRIEVED DASHBOARD CONTEXT ================
+{retrieved_context}
 
 ================ RULES ================
 - The dataset is real and contains valid data
