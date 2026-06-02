@@ -9,8 +9,27 @@ from app.services.insight_generator import generate_insights
 
 router = APIRouter()
 
-# ✅ store dataset sessions
+# store dataset sessions
 dataset_sessions = {}
+
+
+def build_data_context(df, limit: int = 25):
+    """
+    Keep a compact, serializable slice of the uploaded dataset available for chat.
+    The assistant needs actual columns, sample rows, and summary values rather than
+    only the chart metadata generated for the dashboard.
+    """
+    sample_df = df.head(limit).copy()
+    summary = df.describe(include="all").fillna("").to_dict()
+
+    return {
+        "row_count": int(len(df)),
+        "column_count": int(df.shape[1]),
+        "columns": df.columns.tolist(),
+        "dtypes": {col: str(dtype) for col, dtype in df.dtypes.items()},
+        "sample_rows": sample_df.to_dict(orient="records"),
+        "summary": summary,
+    }
 
 
 def generate_insights_background(file_path, profile, charts):
@@ -27,7 +46,7 @@ def generate_insights_background(file_path, profile, charts):
         print(f"[INSIGHTS STORED] {file_path}")
 
     except Exception as e:
-        print("[❌ INSIGHT ERROR]:", str(e))
+        print("[INSIGHT ERROR]:", str(e))
 
 
 @router.get("/analyze")
@@ -43,22 +62,25 @@ def analyze_dataset(file_path: str):
             "missing_values": int(df.isnull().sum().sum())
         }
 
-        # ✅ parallel execution (FAST)
+        # parallel execution (FAST)
         with ThreadPoolExecutor() as executor:
             future_charts = executor.submit(generate_visualizations, df)
             future_profile = executor.submit(profile_dataset, df)
+            future_data_context = executor.submit(build_data_context, df)
 
             charts = future_charts.result()
             profile = future_profile.result()
+            data_context = future_data_context.result()
 
-        # ✅ store context FIRST
+        # store context FIRST
         dataset_sessions[file_path] = {
             "profile": profile,
             "charts": charts,
-            "insights": None
+            "insights": None,
+            "data_context": data_context
         }
 
-        # 🔥 START INSIGHTS IN BACKGROUND (CRITICAL FIX)
+        # START INSIGHTS IN BACKGROUND
         threading.Thread(
             target=generate_insights_background,
             args=(file_path, profile, charts)
@@ -94,7 +116,6 @@ def get_insights(file_path: str):
 
     insights = context.get("insights")
 
-    # 🔥 FIX: Explicit handling
     if insights is None:
         return {
             "status": "processing",
