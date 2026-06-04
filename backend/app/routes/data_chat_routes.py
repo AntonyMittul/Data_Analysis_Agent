@@ -15,8 +15,7 @@ class DataChatRequest(BaseModel):
 
 
 @router.post("/query")
-def data_chat(request: DataChatRequest):
-
+async def data_chat(request: DataChatRequest):
     question = request.question
     file_path = request.file_path
     session_id = request.session_id

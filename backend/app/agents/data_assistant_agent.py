@@ -19,7 +19,7 @@ response_cache = LRUCache(maxsize=100)
 llm = OllamaLLM(
     model=OLLAMA_MODEL,
     temperature=0,
-    num_ctx=1024
+    num_ctx=4096  # Enlarge context window to handle full dataset schema
 )
 
 def get_cache_key(question, file_path):
@@ -78,10 +78,6 @@ async def stream_data_answer(question: str, file_path: str, session_id: str, con
         rows = profile.get("rows", "unknown")
         cols_count = profile.get("columns", "unknown")
         yield f"The dataset contains {rows} rows and {cols_count} columns."
-        return
-
-    if "insight" in question_lower:
-        yield insights
         return
 
     # ================= PROMPT =================

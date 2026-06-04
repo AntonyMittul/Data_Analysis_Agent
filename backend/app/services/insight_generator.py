@@ -6,13 +6,12 @@ from app.config.settings import OLLAMA_MODEL
 llm = OllamaLLM(
     model=OLLAMA_MODEL,
     temperature=0.1,
-    num_ctx=1024,
+    num_ctx=4096,
     num_predict=300
 )
 
 # 🔥 ADD THIS FUNCTION
 def summarize_charts(charts):
-
     summaries = []
 
     for chart in charts:
@@ -24,26 +23,33 @@ def summarize_charts(charts):
                 continue
 
             trace = data[0]
-            y = trace.get("y", [])
+            
+            # Find values key dynamically (Plotly Express maps to y, values, or x)
+            values = []
+            if "y" in trace and trace["y"] is not None:
+                values = trace["y"]
+            elif "values" in trace and trace["values"] is not None:
+                values = trace["values"]
+            elif "x" in trace and trace["x"] is not None:
+                values = trace["x"]
 
-            # 🔥 FIX: convert to numeric safely
-            clean_y = []
-
-            for val in y:
+            # Convert to numeric safely
+            clean_vals = []
+            for val in values:
                 try:
-                    clean_y.append(float(val))
+                    clean_vals.append(float(val))
                 except:
                     continue  # skip invalid values
 
-            if len(clean_y) == 0:
+            if len(clean_vals) == 0:
                 continue
 
             summary = {
                 "title": chart.get("title"),
-                "max": max(clean_y),
-                "min": min(clean_y),
-                "avg": round(sum(clean_y)/len(clean_y), 2),
-                "points": len(clean_y)
+                "max": max(clean_vals),
+                "min": min(clean_vals),
+                "avg": round(sum(clean_vals)/len(clean_vals), 2),
+                "points": len(clean_vals)
             }
 
             summaries.append(summary)
@@ -55,15 +61,16 @@ def summarize_charts(charts):
 
 
 def generate_insights(profile, charts):
-
     try:
         print("[INSIGHT GENERATION STARTED]")
 
         compact_profile = {
-            "columns": profile.get("columns", []),
-            "row_count": profile.get("row_count", 0),
-            "missing_values": profile.get("missing_values", {}),
-            "data_types": profile.get("data_types", {})
+            "row_count": profile.get("rows", 0),
+            "column_count": profile.get("columns", 0),
+            "all_columns": profile.get("all_columns", []),
+            "numeric_columns": profile.get("numeric_columns", []),
+            "categorical_columns": profile.get("categorical_columns", []),
+            "datetime_columns": profile.get("datetime_columns", [])
         }
 
         # 🔥 USE CLEAN SUMMARY INSTEAD OF RAW CHART JSON

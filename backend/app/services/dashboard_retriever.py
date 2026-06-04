@@ -21,12 +21,30 @@ Dataset Profile:
     chunks.append(profile_chunk.strip())
 
     for i, chart in enumerate(charts or []):
+        fig = chart.get("figure", {})
+        traces = fig.get("data", [])
+        chart_type = "Unknown"
+        x_values_sample = ""
+        y_values_sample = ""
+        
+        if traces:
+            trace = traces[0]
+            chart_type = trace.get("type", "Unknown")
+            
+            # Extract sample data points to give LLM exact coordinate values
+            if "x" in trace and trace["x"]:
+                x_values_sample = f"Sample X Keys: {trace['x'][:5]}"
+            if "y" in trace and trace["y"]:
+                y_values_sample = f"Sample Y Values: {trace['y'][:5]}"
+            elif "values" in trace and trace["values"]:
+                y_values_sample = f"Sample Values: {trace['values'][:5]}"
+
         chart_chunk = f"""
 Chart {i + 1}: {chart.get('title', 'Untitled Chart')}
-Chart Type: {chart.get('chart_type', 'Unknown')}
-X-axis: {chart.get('x_axis', chart.get('x', 'Unknown'))}
-Y-axis: {chart.get('y_axis', chart.get('y', 'Unknown'))}
-Description: {chart.get('description', 'Generated chart from dataset trends and relationships.')}
+Chart Type: {chart_type}
+{x_values_sample}
+{y_values_sample}
+Description: Visual representation of {chart.get('title', 'dataset relationship')}.
 """
         chunks.append(chart_chunk.strip())
 
