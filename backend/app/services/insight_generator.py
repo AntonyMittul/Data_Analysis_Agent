@@ -33,6 +33,16 @@ def summarize_charts(charts):
             elif "x" in trace and trace["x"] is not None:
                 values = trace["x"]
 
+            # Ensure values is list-like and iterable safely
+            if not isinstance(values, (list, tuple, set)):
+                try:
+                    if isinstance(values, (dict, str)) or values is None:
+                        values = []
+                    else:
+                        values = list(values)
+                except:
+                    values = []
+
             # Convert to numeric safely
             clean_vals = []
             for val in values:

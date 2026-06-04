@@ -7,6 +7,21 @@ def _tokenize(text: str) -> set:
     return set(re.findall(r"[a-zA-Z0-9_]+", (text or "").lower()))
 
 
+def safe_slice(val, limit=5):
+    if val is None:
+        return ""
+    if isinstance(val, (list, tuple, set)):
+        return str(list(val)[:limit])
+    if isinstance(val, dict):
+        return ""
+    try:
+        if isinstance(val, str):
+            return val[:limit]
+        return str(list(val)[:limit])
+    except:
+        return str(val)
+
+
 def build_dashboard_chunks(profile: Dict, charts: List[Dict], insights: str) -> List[str]:
     chunks: List[str] = []
 
@@ -31,13 +46,19 @@ Dataset Profile:
             trace = traces[0]
             chart_type = trace.get("type", "Unknown")
             
-            # Extract sample data points to give LLM exact coordinate values
-            if "x" in trace and trace["x"]:
-                x_values_sample = f"Sample X Keys: {trace['x'][:5]}"
-            if "y" in trace and trace["y"]:
-                y_values_sample = f"Sample Y Values: {trace['y'][:5]}"
-            elif "values" in trace and trace["values"]:
-                y_values_sample = f"Sample Values: {trace['values'][:5]}"
+            # Extract sample data points safely using safe_slice
+            if "x" in trace and trace["x"] is not None:
+                sample = safe_slice(trace["x"], 5)
+                if sample:
+                    x_values_sample = f"Sample X Keys: {sample}"
+            if "y" in trace and trace["y"] is not None:
+                sample = safe_slice(trace["y"], 5)
+                if sample:
+                    y_values_sample = f"Sample Y Values: {sample}"
+            elif "values" in trace and trace["values"] is not None:
+                sample = safe_slice(trace["values"], 5)
+                if sample:
+                    y_values_sample = f"Sample Values: {sample}"
 
         chart_chunk = f"""
 Chart {i + 1}: {chart.get('title', 'Untitled Chart')}
