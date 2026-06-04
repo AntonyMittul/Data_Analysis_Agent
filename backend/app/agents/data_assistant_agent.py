@@ -10,6 +10,7 @@ from app.services.dashboard_retriever import retrieve_dashboard_context
 from cachetools import LRUCache
 from app.config.settings import OLLAMA_MODEL
 import asyncio
+import json
 
 # ================= CACHE =================
 response_cache = LRUCache(maxsize=100)
@@ -26,7 +27,6 @@ def get_cache_key(question, file_path):
 
 # ================= MAIN FUNCTION =================
 async def stream_data_answer(question: str, file_path: str, session_id: str, context: dict):
-
     cache_key = get_cache_key(question, file_path)
 
     # ================= CACHE HIT =================
@@ -44,7 +44,6 @@ async def stream_data_answer(question: str, file_path: str, session_id: str, con
     add_message(session_id, "user", question)
 
     # ================= NEW CONTEXT =================
-
     structured_context = context.get("context", {})
     llm_context = structured_context.get("llm_context", "")
 
@@ -66,11 +65,19 @@ async def stream_data_answer(question: str, file_path: str, session_id: str, con
     question_lower = question.lower()
 
     if "column" in question_lower:
-        yield f"Columns available: {', '.join(structured_context.get('structured', {}).get('columns', []))}"
+        cols = structured_context.get('structured', {}).get('columns', [])
+        if not cols:
+            cols = profile.get("all_columns", [])
+        if cols:
+            yield f"Columns available in the dataset:\n" + "\n".join([f"- {col}" for col in cols])
+        else:
+            yield "No columns information available."
         return
 
     if "row" in question_lower or "size" in question_lower:
-        yield f"The dataset contains structured data with multiple records available for analysis."
+        rows = profile.get("rows", "unknown")
+        cols_count = profile.get("columns", "unknown")
+        yield f"The dataset contains {rows} rows and {cols_count} columns."
         return
 
     if "insight" in question_lower:

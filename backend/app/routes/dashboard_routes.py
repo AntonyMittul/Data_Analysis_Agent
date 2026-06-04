@@ -32,7 +32,6 @@ def generate_insights_background(file_path, profile, charts):
 
 @router.get("/analyze")
 def analyze_dataset(file_path: str):
-
     try:
         df = load_dataset(file_path)
 
@@ -51,11 +50,22 @@ def analyze_dataset(file_path: str):
             charts = future_charts.result()
             profile = future_profile.result()
 
+        # Build agent context using StructuredDataAgent (CRITICAL FIX)
+        from app.agents.structured_agent import StructuredDataAgent
+        agent = StructuredDataAgent()
+        structure_info = {
+            "numeric_columns": profile.get("numeric_columns", []),
+            "categorical_columns": profile.get("categorical_columns", []),
+            "datetime_columns": profile.get("datetime_columns", [])
+        }
+        agent_context = agent.build_context(df, structure_info)
+
         # ✅ store context FIRST
         dataset_sessions[file_path] = {
             "profile": profile,
             "charts": charts,
-            "insights": None
+            "insights": None,
+            "context": agent_context
         }
 
         # 🔥 START INSIGHTS IN BACKGROUND (CRITICAL FIX)
@@ -83,7 +93,6 @@ def analyze_dataset(file_path: str):
 
 @router.get("/insights")
 def get_insights(file_path: str):
-
     context = dataset_sessions.get(file_path)
 
     if not context:
@@ -115,7 +124,6 @@ def get_insights(file_path: str):
 
 @router.get("/preview")
 def preview_data(file_path: str):
-
     from app.services.dataset_loader import load_dataset
 
     try:
