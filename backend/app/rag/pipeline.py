@@ -50,9 +50,11 @@ async def rag_pipeline_stream(doc_id, question):
 
     # ---- GENERAL MODE ----
     if intent == "general":
+        full_response = ""
         async for chunk in generate_answer_stream("", question):
-            add_message(session_id, "assistant", chunk)
+            full_response += chunk
             yield chunk
+        add_message(session_id, "assistant", full_response)
         return
 
     # ---- DOCUMENT REQUIRED BUT MISSING ----
@@ -65,9 +67,11 @@ async def rag_pipeline_stream(doc_id, question):
     # ---- RETRIEVER ----
     retriever = get_retriever(doc_id)
     if not retriever:
+        full_response = ""
         async for chunk in generate_answer_stream("", question):
-            add_message(session_id, "assistant", chunk)
+            full_response += chunk
             yield chunk
+        add_message(session_id, "assistant", full_response)
         return
 
     if hasattr(retriever, "set_k"):
@@ -78,9 +82,11 @@ async def rag_pipeline_stream(doc_id, question):
     docs = [d for d in docs if len(d.page_content.strip()) > 50]
 
     if not docs:
+        full_response = ""
         async for chunk in generate_answer_stream("", question):
-            add_message(session_id, "assistant", chunk)
+            full_response += chunk
             yield chunk
+        add_message(session_id, "assistant", full_response)
         return
 
     # ---- LIMIT CONTEXT ----
@@ -105,9 +111,11 @@ async def rag_pipeline_stream(doc_id, question):
     )
 
     # ---- STREAM ANSWER ----
+    full_response = ""
     async for chunk in generate_answer_stream(context, question):
-        add_message(session_id, "assistant", chunk)
+        full_response += chunk
         yield chunk
+    add_message(session_id, "assistant", full_response)
 
 # ================= API ENDPOINTS =================
 

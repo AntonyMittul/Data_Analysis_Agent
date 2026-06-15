@@ -1,40 +1,37 @@
+# --- Web framework ---
 fastapi
 uvicorn
 python-multipart
+aiofiles
 
+# --- Data handling ---
 pandas
 numpy
 openpyxl
 
+# --- Visualization ---
 plotly
 
+# --- LLM (Google Gemini) ---
 langchain
 langchain-community
-langgraph
-langchain-ollama
+langchain-google-genai
+google-generativeai
 
-chromadb
+# --- RAG / vector search ---
 faiss-cpu
-sentence-transformers
+rank_bm25
 
+# --- Document parsing ---
 pypdf
-python-dotenv
 python-docx
 docx2txt
 
+# --- ML (chart trend prediction) ---
 scikit-learn
 
-ollama
-
-tqdm
-
+# --- Config / utils ---
 python-dotenv
 pydantic
-
 requests
-
-aiofiles
-
 cachetools
-
-rank_bm25

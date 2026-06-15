@@ -1,15 +1,7 @@
 from app.rag.business_prompt import build_business_prompt
-from langchain_ollama import OllamaLLM
-from app.config.settings import OLLAMA_MODEL
+from app.config.llm import get_llm
 
-llm = OllamaLLM(
-    model=OLLAMA_MODEL,
-    temperature=0,
-    top_k=1,
-    repeat_penalty=1.0,
-    num_ctx=4096,
-    num_thread=4
-)
+llm = get_llm(temperature=0, top_k=1)
 
 async def generate_answer_stream(context: str, question: str):
     prompt = build_business_prompt(context, question)

@@ -1,17 +1,10 @@
-from langchain_ollama import OllamaLLM
 import json
-from app.config.settings import OLLAMA_MODEL
+from app.config.llm import get_llm
 
 
 def plan_visualizations(dataset_profile):
 
-    llm = OllamaLLM(
-        model=OLLAMA_MODEL,
-        temperature=0.1,
-        num_predict=512,
-        top_p=0.9,
-        top_k=20
-    )
+    llm = get_llm(temperature=0.1, max_output_tokens=512, top_p=0.9, top_k=20)
 
     prompt = f"""
 You are a data visualization expert.

@@ -1,4 +1,3 @@
-from langchain_ollama import OllamaLLM
 from app.memory.chat_memory import (
     get_history,
     add_message,
@@ -8,7 +7,7 @@ from app.memory.chat_memory import (
 from app.services.insight_generator import summarize_charts
 from app.services.dashboard_retriever import retrieve_dashboard_context
 from cachetools import LRUCache
-from app.config.settings import OLLAMA_MODEL
+from app.config.llm import get_llm
 import asyncio
 import json
 
@@ -16,11 +15,7 @@ import json
 response_cache = LRUCache(maxsize=100)
 
 # ================= LLM =================
-llm = OllamaLLM(
-    model=OLLAMA_MODEL,
-    temperature=0,
-    num_ctx=4096  # Enlarge context window to handle full dataset schema
-)
+llm = get_llm(temperature=0)
 
 def get_cache_key(question, file_path):
     return f"{file_path}:{question.strip().lower()}"

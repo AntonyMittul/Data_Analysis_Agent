@@ -1,14 +1,8 @@
-from langchain_ollama import OllamaLLM
 import json
-from app.config.settings import OLLAMA_MODEL
+from app.config.llm import get_llm
 
 # ✅ Optimized LLM config
-llm = OllamaLLM(
-    model=OLLAMA_MODEL,
-    temperature=0.1,
-    num_ctx=4096,
-    num_predict=300
-)
+llm = get_llm(temperature=0.1, max_output_tokens=1024)
 
 # 🔥 ADD THIS FUNCTION
 def summarize_charts(charts):

@@ -1,4 +1,3 @@
-from langchain_ollama import OllamaLLM
 from app.memory.chat_memory import (
     get_history,
     add_message,
@@ -7,19 +6,6 @@ from app.memory.chat_memory import (
 )
 from app.rag.retriever import get_retriever
 from app.rag.generator import generate_answer_stream
-from app.config.settings import OLLAMA_MODEL
-
-# ================= LLM CONFIG =================
-# Increased num_ctx to 4096 to handle larger document contexts
-# Increased num_predict to 1024 to prevent truncated summaries
-llm = OllamaLLM(
-    model=OLLAMA_MODEL,
-    temperature=0.1,
-    num_ctx=4096,   
-    top_k=5,           
-    top_p=0.9,
-)
-
 
 retrieval_cache = {}
 response_cache = {}

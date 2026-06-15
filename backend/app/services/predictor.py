@@ -50,7 +50,7 @@ def add_predictions_to_chart(chart):
             except:
                 future_x = list(range(len(y_values), len(y_values) + future_steps))
 
-        # 🔥 Add prediction trace
+        # Add prediction trace
         chart["prediction"] = {
             "x": future_x,
             "y": predictions.tolist()

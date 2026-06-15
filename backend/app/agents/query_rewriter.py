@@ -1,7 +1,6 @@
-from langchain_ollama import OllamaLLM
-from app.config.settings import OLLAMA_MODEL
+from app.config.llm import get_llm
 
-llm = OllamaLLM(model=OLLAMA_MODEL)
+llm = get_llm()
 
 def rewrite_query(question: str):
 
