@@ -2,13 +2,11 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router";
 import {
   ArrowLeft,
-  Upload,
   Send,
   FileText,
   Loader2,
   Paperclip,
   Menu,
-  AlertCircle,
   Plus,
   Search,
   MessageSquare,
@@ -402,19 +400,9 @@ export function DocumentExtraction() {
         )}
       </div>
 
-      <footer className="bg-white border-t border-slate-200 p-6">
+      <footer className="bg-white border-t border-slate-200 px-6 py-3">
         <div className="max-w-4xl mx-auto">
-          <form onSubmit={handleSubmit} className="relative flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="p-3 text-slate-500 hover:text-violet-600 hover:bg-violet-50 rounded-xl transition-colors"
-              title="Upload Document"
-              disabled={isProcessing}
-            >
-              {isProcessing ? <Loader2 className="animate-spin" size={20} /> : <Upload size={20} />}
-            </button>
-
+          <form onSubmit={handleSubmit} className="flex items-center gap-3">
             <input
               ref={fileInputRef}
               type="file"
@@ -423,29 +411,35 @@ export function DocumentExtraction() {
               className="hidden"
             />
 
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={uploadedFile ? "Ask a specific question..." : "Ask anything or upload a document..."}
-              disabled={isStreaming}
-              className="flex-1 bg-slate-100 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-violet-500 outline-none transition-all disabled:opacity-50"
-            />
+            <div className="relative flex-1">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isProcessing}
+                title="Upload document"
+                className="absolute left-2 top-1/2 -translate-y-1/2 p-2 text-slate-500 hover:text-violet-600 hover:bg-violet-100 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {isProcessing ? <Loader2 className="animate-spin" size={20} /> : <Plus size={20} />}
+              </button>
+
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={uploadedFile ? "Ask a specific question..." : "Ask anything or upload a document..."}
+                disabled={isStreaming}
+                className="w-full bg-slate-100 border-none rounded-2xl pl-12 pr-5 py-3 focus:ring-2 focus:ring-violet-500 outline-none transition-all disabled:opacity-50"
+              />
+            </div>
 
             <button
               type="submit"
               disabled={!input.trim() || isStreaming}
-              className="bg-violet-600 hover:bg-violet-700 disabled:bg-slate-300 text-white p-4 rounded-2xl shadow-md transition-all"
+              className="bg-violet-600 hover:bg-violet-700 disabled:bg-slate-300 text-white p-3 rounded-2xl shadow-md transition-all"
             >
               <Send size={20} />
             </button>
           </form>
-
-          {!uploadedFile && (
-            <p className="text-center text-xs text-slate-400 mt-3 flex items-center justify-center gap-1">
-              <AlertCircle size={12} /> Upload a document for deeper insights (optional).
-            </p>
-          )}
         </div>
       </footer>
     </div>
