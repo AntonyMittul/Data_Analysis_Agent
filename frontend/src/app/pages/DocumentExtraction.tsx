@@ -281,7 +281,7 @@ export function DocumentExtraction() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.docx,.txt,.csv,.xlsx,.xls"
+              accept=".pdf,.txt,.csv,.docx,.xlsx,.xls,application/pdf,text/plain,text/csv,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               onChange={handleFileUpload}
               className="hidden"
             />
