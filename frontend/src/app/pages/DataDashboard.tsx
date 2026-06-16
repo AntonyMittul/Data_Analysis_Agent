@@ -18,12 +18,14 @@ import {
   CheckCircle2,
   Calendar,
   Trophy,
-  Check
+  Check,
+  Download
 } from "lucide-react";
 
 import { classifyCharts } from "../../utils/ChartClassifier";
 import Markdown from "../components/Markdown";
 import { ThemeToggle, useTheme } from "../components/ThemeProvider";
+import { exportDashboardPdf } from "../lib/exportPdf";
 
 // ================= TYPES =================
 interface ChartData {
@@ -193,6 +195,7 @@ export function DataDashboard() {
 
   const [chatInput, setChatInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [dashboardInsights, setDashboardInsights] = useState<string | null>(null);
 
@@ -508,6 +511,23 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       ]
     : [];
 
+  const handleDownloadPdf = async () => {
+    if (!chartData.length || isExporting) return;
+    setIsExporting(true);
+    try {
+      await exportDashboardPdf({
+        fileName: datasetStats?.file_name || "dataset",
+        kpis,
+        charts: chartData,
+        insights: dashboardInsights,
+      });
+    } catch (err) {
+      console.error("PDF export failed:", err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const categorizedCharts = classifyCharts(chartData);
 
   
@@ -555,6 +575,18 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
               >
                 View Data
               </button>
+
+              {chartData.length > 0 && (
+                <button
+                  onClick={handleDownloadPdf}
+                  disabled={isExporting}
+                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-60"
+                  title="Download all visuals as a PDF report"
+                >
+                  {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  {isExporting ? "Preparing…" : "Download PDF"}
+                </button>
+              )}
 
             </div>
 

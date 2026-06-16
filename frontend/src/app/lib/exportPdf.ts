@@ -1,0 +1,161 @@
+import { jsPDF } from "jspdf";
+// Reuse the same Plotly instance react-plotly.js already bundles (no extra weight).
+import Plotly from "plotly.js/dist/plotly";
+
+export interface PdfChart {
+  title: string;
+  data: any[];
+  layout: any;
+}
+export interface PdfKpi {
+  title: string;
+  value: any;
+  subtitle?: string;
+}
+
+/**
+ * Build and download a multi-page "report style" PDF of the dashboard entirely
+ * in the browser — no data is sent to or stored on any server.
+ */
+export async function exportDashboardPdf(opts: {
+  fileName?: string;
+  kpis?: PdfKpi[];
+  charts: PdfChart[];
+  insights?: string | null;
+}) {
+  const { fileName = "dataset", kpis = [], charts, insights } = opts;
+
+  const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+  const PW = doc.internal.pageSize.getWidth();
+  const PH = doc.internal.pageSize.getHeight();
+  const M = 40;
+  const contentW = PW - M * 2;
+  let y = M;
+
+  const ensure = (h: number) => {
+    if (y + h > PH - M) {
+      doc.addPage();
+      y = M;
+    }
+  };
+
+  // ---------- Header ----------
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor(30, 41, 59);
+  doc.text("Data Dashboard Report", M, y);
+  y += 20;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(100, 116, 139);
+  doc.text(`Dataset: ${fileName}`, M, y);
+  doc.text(`Generated: ${new Date().toLocaleString()}`, PW - M, y, { align: "right" });
+  y += 12;
+  doc.setDrawColor(226, 232, 240);
+  doc.line(M, y, PW - M, y);
+  y += 22;
+
+  // ---------- KPI metrics ----------
+  if (kpis.length) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(30, 41, 59);
+    doc.text("Key Metrics", M, y);
+    y += 18;
+
+    const colW = contentW / 2;
+    const rowH = 48;
+    kpis.forEach((k, i) => {
+      const x = M + (i % 2) * colW;
+      const rowY = y + Math.floor(i / 2) * rowH;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(100, 116, 139);
+      doc.text(k.title, x, rowY);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(15);
+      doc.setTextColor(79, 70, 229);
+      doc.text(String(k.value ?? ""), x, rowY + 17);
+      if (k.subtitle) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(148, 163, 184);
+        doc.text(String(k.subtitle), x, rowY + 30);
+      }
+    });
+    y += Math.ceil(kpis.length / 2) * rowH + 6;
+    doc.setDrawColor(226, 232, 240);
+    doc.line(M, y, PW - M, y);
+    y += 22;
+  }
+
+  // ---------- AI insights ----------
+  const insightText = (insights || "").trim();
+  if (insightText && !/generating insights/i.test(insightText)) {
+    ensure(50);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(30, 41, 59);
+    doc.text("AI Insights", M, y);
+    y += 16;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(51, 65, 85);
+    const cleaned = insightText
+      .replace(/\*\*/g, "")
+      .replace(/^#+\s*/gm, "")
+      .replace(/^\s*[-*]\s+/gm, "• ");
+    const lines = doc.splitTextToSize(cleaned, contentW) as string[];
+    lines.forEach((ln) => {
+      ensure(14);
+      doc.text(ln, M, y);
+      y += 14;
+    });
+    y += 12;
+  }
+
+  // ---------- Charts (rendered to images, ~2 per page) ----------
+  const imgW = contentW;
+  const imgH = Math.round(imgW * 0.5); // 2:1 aspect ratio
+
+  for (const chart of charts) {
+    try {
+      const figure = {
+        data: chart.data,
+        layout: {
+          ...chart.layout,
+          title: "",
+          width: 1000,
+          height: 500,
+          // Force a clean light, printable look regardless of the app theme.
+          paper_bgcolor: "#ffffff",
+          plot_bgcolor: "#ffffff",
+          font: { color: "#1e293b" },
+          margin: { l: 55, r: 25, t: 20, b: 55 },
+        },
+      };
+      const url: string = await (Plotly as any).toImage(figure, {
+        format: "png",
+        width: 1000,
+        height: 500,
+        scale: 2,
+      });
+
+      ensure(18 + imgH + 18);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(30, 41, 59);
+      doc.text(chart.title || "Chart", M, y);
+      y += 8;
+      doc.addImage(url, "PNG", M, y, imgW, imgH);
+      y += imgH + 18;
+    } catch (e) {
+      console.error("PDF chart export failed:", chart.title, e);
+    }
+  }
+
+  const base = fileName.replace(/\.[^.]+$/, "") || "dashboard";
+  doc.save(`${base}_dashboard.pdf`);
+}
