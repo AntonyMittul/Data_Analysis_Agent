@@ -1,7 +1,7 @@
 from app.rag.retriever import get_retriever
 from app.rag.generator import generate_answer_stream
 from app.rag.vector_store import get_db
-from app.memory.chat_memory import create_session, add_message, set_title, get_history, get_sessions, chat_sessions, set_doc_id
+from app.memory.chat_memory import create_session, add_message, set_title, get_history, get_sessions, session_exists, set_doc_id
 import uuid
 
 # ================= HELPERS =================
@@ -56,7 +56,7 @@ async def rag_pipeline_stream(doc_id, question, session_id=None, file_name=None)
     # and a chat can outlive a single document). Fall back to doc_id for
     # backward compatibility, then to a fresh id.
     session_id = session_id or doc_id or str(uuid.uuid4())
-    if session_id not in chat_sessions:
+    if not session_exists(session_id):
         create_session(session_id, file_name=file_name or "New chat", doc_id=doc_id, kind="document")
         set_title(session_id, generate_chat_title(question))
     elif doc_id:

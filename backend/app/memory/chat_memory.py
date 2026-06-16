@@ -1,86 +1,191 @@
-import json
+"""Chat session storage backed by SQLite.
+
+SQLite is a tiny, file-based database built into Python — no server, no setup,
+just a single file (chat.db). It replaces the old per-session JSON files while
+keeping the same function names, so the rest of the app is unchanged.
+
+Two tables:
+  sessions(session_id, title, file_name, doc_id, kind, created_at)
+  messages(id, session_id, role, content, created_at)
+"""
 import os
+import json
+import sqlite3
+import threading
 from datetime import datetime
 
-SESSIONS_DIR = "sessions"
-os.makedirs(SESSIONS_DIR, exist_ok=True)
+DB_PATH = os.getenv("CHAT_DB_PATH", "chat.db")
+LEGACY_DIR = "sessions"  # old JSON store (migrated once, then ignored)
 
-chat_sessions = {}
+# One shared connection; a lock keeps concurrent FastAPI requests safe.
+_conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+_conn.row_factory = sqlite3.Row
+_lock = threading.Lock()
 
-def _load_sessions():
-    global chat_sessions
-    for file in os.listdir(SESSIONS_DIR):
-        if file.endswith('.json'):
-            session_id = file[:-5]
-            with open(os.path.join(SESSIONS_DIR, file), 'r') as f:
-                chat_sessions[session_id] = json.load(f)
 
-def _save_session(session_id):
-    with open(os.path.join(SESSIONS_DIR, f"{session_id}.json"), 'w') as f:
-        json.dump(chat_sessions[session_id], f, default=str)
+def _now() -> str:
+    return datetime.now().isoformat()
 
-_load_sessions()
+
+def _init_db():
+    with _lock:
+        _conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sessions (
+                session_id  TEXT PRIMARY KEY,
+                title       TEXT,
+                file_name   TEXT,
+                doc_id      TEXT,
+                kind        TEXT DEFAULT 'document',
+                created_at  TEXT
+            )
+            """
+        )
+        _conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS messages (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id  TEXT NOT NULL,
+                role        TEXT,
+                content     TEXT,
+                created_at  TEXT
+            )
+            """
+        )
+        _conn.execute("CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id)")
+        _conn.commit()
+
+
+def _migrate_legacy_json():
+    """Import any old sessions/*.json files into the DB once (if DB is empty)."""
+    with _lock:
+        count = _conn.execute("SELECT COUNT(*) AS n FROM sessions").fetchone()["n"]
+    if count > 0 or not os.path.isdir(LEGACY_DIR):
+        return
+
+    for fname in os.listdir(LEGACY_DIR):
+        if not fname.endswith(".json"):
+            continue
+        sid = fname[:-5]
+        try:
+            with open(os.path.join(LEGACY_DIR, fname), encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            continue
+        with _lock:
+            _conn.execute(
+                "INSERT OR IGNORE INTO sessions(session_id, title, file_name, doc_id, kind, created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (sid, data.get("title"), data.get("file_name"), data.get("doc_id"),
+                 data.get("kind"), str(data.get("created_at") or "")),
+            )
+            for m in data.get("messages", []):
+                _conn.execute(
+                    "INSERT INTO messages(session_id, role, content, created_at) VALUES (?, ?, ?, ?)",
+                    (sid, m.get("role"), m.get("content"), ""),
+                )
+            _conn.commit()
+
+
+_init_db()
+_migrate_legacy_json()
+
+
+# ===================== PUBLIC API (unchanged signatures) =====================
+
+def session_exists(session_id: str) -> bool:
+    with _lock:
+        row = _conn.execute("SELECT 1 FROM sessions WHERE session_id = ?", (session_id,)).fetchone()
+    return row is not None
+
 
 def create_session(session_id: str, file_name: str, doc_id: str = None, kind: str = "document"):
-    # `kind` keeps the document-chat and data-dashboard-chat histories separate
-    # even though they share this store ("document" vs "data").
-    chat_sessions[session_id] = {
-        "title": None,
-        "file_name": file_name,
-        "doc_id": doc_id,
-        "kind": kind,
-        "messages": [],
-        "created_at": datetime.now().isoformat()
-    }
-    _save_session(session_id)
+    # `kind` keeps document-chat and data-dashboard-chat histories separate.
+    with _lock:
+        _conn.execute(
+            "INSERT OR IGNORE INTO sessions(session_id, title, file_name, doc_id, kind, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (session_id, None, file_name, doc_id, kind, _now()),
+        )
+        _conn.commit()
+
 
 def set_doc_id(session_id: str, doc_id: str):
-    if session_id in chat_sessions and doc_id:
-        chat_sessions[session_id]["doc_id"] = doc_id
-        _save_session(session_id)
-
-def get_session(session_id: str):
-    return chat_sessions.get(session_id)
-
-def delete_session(session_id: str):
-    chat_sessions.pop(session_id, None)
-    try:
-        os.remove(os.path.join(SESSIONS_DIR, f"{session_id}.json"))
-    except OSError:
-        pass
-
-def add_message(session_id: str, role: str, content: str):
-    if session_id not in chat_sessions:
+    if not doc_id:
         return
-    chat_sessions[session_id]["messages"].append({
-        "role": role,
-        "content": content
-    })
-    _save_session(session_id)
+    with _lock:
+        _conn.execute("UPDATE sessions SET doc_id = ? WHERE session_id = ?", (doc_id, session_id))
+        _conn.commit()
 
-def get_history(session_id: str):
-    if session_id not in chat_sessions:
-        return []
-    return chat_sessions[session_id]["messages"]
-
-def get_sessions(kind: str = None):
-    items = [
-        {
-            "session_id": sid,
-            "title": data.get("title"),
-            "file_name": data.get("file_name"),
-            "doc_id": data.get("doc_id"),
-            "kind": data.get("kind", "document"),
-            "created_at": data.get("created_at"),
-        }
-        for sid, data in chat_sessions.items()
-        if kind is None or data.get("kind") == kind
-    ]
-    # Newest first (created_at is an ISO string, which sorts chronologically).
-    items.sort(key=lambda s: s.get("created_at") or "", reverse=True)
-    return items
 
 def set_title(session_id: str, title: str):
-    if session_id in chat_sessions:
-        chat_sessions[session_id]["title"] = title
-        _save_session(session_id)
+    with _lock:
+        _conn.execute("UPDATE sessions SET title = ? WHERE session_id = ?", (title, session_id))
+        _conn.commit()
+
+
+def add_message(session_id: str, role: str, content: str):
+    with _lock:
+        exists = _conn.execute("SELECT 1 FROM sessions WHERE session_id = ?", (session_id,)).fetchone()
+        if not exists:
+            return
+        _conn.execute(
+            "INSERT INTO messages(session_id, role, content, created_at) VALUES (?, ?, ?, ?)",
+            (session_id, role, content, _now()),
+        )
+        _conn.commit()
+
+
+def get_history(session_id: str):
+    with _lock:
+        rows = _conn.execute(
+            "SELECT role, content FROM messages WHERE session_id = ? ORDER BY id", (session_id,)
+        ).fetchall()
+    return [{"role": r["role"], "content": r["content"]} for r in rows]
+
+
+def get_sessions(kind: str = None):
+    with _lock:
+        if kind is None:
+            rows = _conn.execute("SELECT * FROM sessions ORDER BY created_at DESC").fetchall()
+        else:
+            rows = _conn.execute(
+                "SELECT * FROM sessions WHERE kind = ? ORDER BY created_at DESC", (kind,)
+            ).fetchall()
+    return [
+        {
+            "session_id": r["session_id"],
+            "title": r["title"],
+            "file_name": r["file_name"],
+            "doc_id": r["doc_id"],
+            "kind": r["kind"],
+            "created_at": r["created_at"],
+        }
+        for r in rows
+    ]
+
+
+def get_session(session_id: str):
+    with _lock:
+        s = _conn.execute("SELECT * FROM sessions WHERE session_id = ?", (session_id,)).fetchone()
+        if not s:
+            return None
+        rows = _conn.execute(
+            "SELECT role, content FROM messages WHERE session_id = ? ORDER BY id", (session_id,)
+        ).fetchall()
+    return {
+        "session_id": s["session_id"],
+        "title": s["title"],
+        "file_name": s["file_name"],
+        "doc_id": s["doc_id"],
+        "kind": s["kind"],
+        "created_at": s["created_at"],
+        "messages": [{"role": r["role"], "content": r["content"]} for r in rows],
+    }
+
+
+def delete_session(session_id: str):
+    with _lock:
+        _conn.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
+        _conn.execute("DELETE FROM sessions WHERE session_id = ?", (session_id,))
+        _conn.commit()

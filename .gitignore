@@ -15,6 +15,10 @@ uploads/
 vector_db/
 sessions/
 
+# Database (SQLite)
+*.db
+*.db-journal
+
 # OS
 .DS_Store
 Thumbs.db
