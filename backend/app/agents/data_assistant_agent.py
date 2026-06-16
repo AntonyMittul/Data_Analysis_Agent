@@ -33,7 +33,7 @@ async def stream_data_answer(question: str, file_path: str, session_id: str, con
     history = get_history(session_id)
 
     if len(history) == 0:
-        create_session(session_id, file_path)
+        create_session(session_id, file_path, kind="data")
         set_title(session_id, question[:60])
 
     add_message(session_id, "user", question)

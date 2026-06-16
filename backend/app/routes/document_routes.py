@@ -99,13 +99,14 @@ async def query_document(request: QueryRequest):
 
 @router.get("/sessions")
 def list_chat_sessions():
-    return {"sessions": get_sessions()}
+    # Only document-intelligence chats — never the data-dashboard ones.
+    return {"sessions": get_sessions(kind="document")}
 
 
 @router.get("/sessions/{session_id}")
 def get_chat_session(session_id: str):
     s = get_session(session_id)
-    if not s:
+    if not s or s.get("kind") != "document":
         return {"error": "Session not found"}
     return {
         "session_id": session_id,

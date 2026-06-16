@@ -21,11 +21,14 @@ def _save_session(session_id):
 
 _load_sessions()
 
-def create_session(session_id: str, file_name: str, doc_id: str = None):
+def create_session(session_id: str, file_name: str, doc_id: str = None, kind: str = "document"):
+    # `kind` keeps the document-chat and data-dashboard-chat histories separate
+    # even though they share this store ("document" vs "data").
     chat_sessions[session_id] = {
         "title": None,
         "file_name": file_name,
         "doc_id": doc_id,
+        "kind": kind,
         "messages": [],
         "created_at": datetime.now().isoformat()
     }
@@ -60,16 +63,18 @@ def get_history(session_id: str):
         return []
     return chat_sessions[session_id]["messages"]
 
-def get_sessions():
+def get_sessions(kind: str = None):
     items = [
         {
             "session_id": sid,
             "title": data.get("title"),
             "file_name": data.get("file_name"),
             "doc_id": data.get("doc_id"),
+            "kind": data.get("kind", "document"),
             "created_at": data.get("created_at"),
         }
         for sid, data in chat_sessions.items()
+        if kind is None or data.get("kind") == kind
     ]
     # Newest first (created_at is an ISO string, which sorts chronologically).
     items.sort(key=lambda s: s.get("created_at") or "", reverse=True)
