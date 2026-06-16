@@ -4,33 +4,52 @@ from app.rag.vector_store import get_db
 from app.memory.chat_memory import create_session, add_message, set_title, get_history, get_sessions, chat_sessions
 import uuid
 
-# ================= HELPER =================
+# ================= HELPERS =================
+
+GREETINGS = {"hi", "hii", "hey", "hello", "helo", "yo", "hi there", "hello there",
+             "good morning", "good afternoon", "good evening"}
+THANKS = ("thank you", "thanks", "thank u", "thx", "ty", "appreciate")
+FAREWELLS = {"bye", "goodbye", "good bye", "see you", "see ya", "that's all",
+             "thats all", "ok bye", "okay bye", "no thanks"}
+
 
 def generate_chat_title(first_message: str):
     if len(first_message) > 40:
         return first_message[:37] + "..."
     return first_message.strip().capitalize()
 
-def detect_intent(question: str, has_document: bool):
-    q = question.lower().strip()
 
-    if q in ["hi", "hello", "hey"]:
-        return "chat"
+def detect_intent(question: str):
+    """Lightweight small-talk detection. Everything else is a real question."""
+    q = question.lower().strip().rstrip("!.?")
 
-    if not has_document:
-        return "general"
+    if q in GREETINGS:
+        return "greeting"
+    if any(t in q for t in THANKS) and len(q) <= 30:
+        return "thanks"
+    if q in FAREWELLS:
+        return "bye"
+    return "qa"
 
-    if any(k in q for k in ["summary", "summarize", "overview", "contents", "report", "topics"]):
-        return "structured"
 
-    return "rag"
+def _format_history(messages, max_turns: int = 6):
+    """Render the last few turns so the assistant can answer follow-ups."""
+    recent = messages[-max_turns:]
+    lines = []
+    for m in recent:
+        role = "User" if m.get("role") == "user" else "Assistant"
+        content = (m.get("content") or "").strip()
+        if content:
+            lines.append(f"{role}: {content}")
+    return "\n".join(lines)
+
 
 # ================= MAIN PIPELINE =================
 
 async def rag_pipeline_stream(doc_id, question):
     db = get_db(doc_id)
     has_document = db is not None
-    intent = detect_intent(question, has_document)
+    intent = detect_intent(question)
 
     # ---- SESSION MANAGEMENT ----
     session_id = doc_id or str(uuid.uuid4())
@@ -38,81 +57,63 @@ async def rag_pipeline_stream(doc_id, question):
         create_session(session_id, file_name="uploaded_doc.pdf")
         set_title(session_id, generate_chat_title(question))
 
-    # Save user message
+    # Snapshot history BEFORE adding the current turn, then record the question.
+    history = _format_history(get_history(session_id))
     add_message(session_id, "user", question)
 
-    # ---- CHAT MODE ----
-    if intent == "chat":
-        response = "Hello! How can I help you today?\n\n"
+    # ---- SMALL TALK (instant, no LLM/retrieval needed) ----
+    if intent == "greeting":
+        response = ("Hello! I'm your sales, finance, and business assistant. "
+                    "Ask me anything about your uploaded document — or about business, "
+                    "finance, or sales in general.")
         add_message(session_id, "assistant", response)
         yield response
         return
 
-    # ---- GENERAL MODE ----
-    if intent == "general":
-        full_response = ""
-        async for chunk in generate_answer_stream("", question):
-            full_response += chunk
-            yield chunk
-        add_message(session_id, "assistant", full_response)
-        return
-
-    # ---- DOCUMENT REQUIRED BUT MISSING ----
-    if not has_document:
-        response = "Please upload a document to answer this question."
+    if intent == "thanks":
+        response = "You're welcome! Happy to help — feel free to ask anything else about your document or business topics."
         add_message(session_id, "assistant", response)
         yield response
         return
 
-    # ---- RETRIEVER ----
-    retriever = get_retriever(doc_id)
-    if not retriever:
-        full_response = ""
-        async for chunk in generate_answer_stream("", question):
-            full_response += chunk
-            yield chunk
-        add_message(session_id, "assistant", full_response)
+    if intent == "bye":
+        response = "Goodbye! Come back anytime you need insights from your documents or business guidance."
+        add_message(session_id, "assistant", response)
+        yield response
         return
 
-    if hasattr(retriever, "set_k"):
-        retriever.set_k(8 if intent == "structured" else 6)
+    # ---- RETRIEVE DOCUMENT CONTEXT (may be empty) ----
+    context = ""
+    if has_document:
+        retriever = get_retriever(doc_id)
+        if retriever:
+            if hasattr(retriever, "set_k"):
+                is_broad = any(k in question.lower()
+                               for k in ["summary", "summarize", "overview", "contents", "topics"])
+                retriever.set_k(8 if is_broad else 6)
 
-    # ---- RETRIEVE DOCS ----
-    docs = await retriever.ainvoke(question)
-    docs = [d for d in docs if len(d.page_content.strip()) > 50]
+            docs = await retriever.ainvoke(question)
+            docs = [d for d in docs if len(d.page_content.strip()) > 50]
 
-    if not docs:
-        full_response = ""
-        async for chunk in generate_answer_stream("", question):
-            full_response += chunk
-            yield chunk
-        add_message(session_id, "assistant", full_response)
-        return
+            MAX_CHUNKS, MAX_CONTEXT_TOKENS = 6, 1400
+            selected, total = [], 0
+            for d in docs:
+                est = d.metadata.get("token_estimate", max(1, len(d.page_content) // 4))
+                if total + est > MAX_CONTEXT_TOKENS:
+                    break
+                selected.append(d)
+                total += est
+                if len(selected) >= MAX_CHUNKS:
+                    break
 
-    # ---- LIMIT CONTEXT ----
-    MAX_CHUNKS = 6
-    MAX_CONTEXT_TOKENS = 1400
-    selected_docs, total_tokens = [], 0
+            context = "\n\n==========\n\n".join(
+                f"Page {d.metadata.get('page', 'N/A')}:\n\n{d.page_content.strip()}"
+                for d in selected
+            )
 
-    for d in docs:
-        content = d.page_content.strip()
-        token_estimate = d.metadata.get("token_estimate", max(1, len(content) // 4))
-        if total_tokens + token_estimate > MAX_CONTEXT_TOKENS:
-            break
-        selected_docs.append(d)
-        total_tokens += token_estimate
-        if len(selected_docs) >= MAX_CHUNKS:
-            break
-
-    # ---- BUILD CONTEXT ----
-    context = "\n\n==========\n\n".join(
-        f"Page {d.metadata.get('page','N/A')}:\n\n{d.page_content.strip()}"
-        for d in selected_docs
-    )
-
-    # ---- STREAM ANSWER ----
+    # ---- STREAM ANSWER (document-first, expert fallback when context is empty) ----
     full_response = ""
-    async for chunk in generate_answer_stream(context, question):
+    async for chunk in generate_answer_stream(context, question, history):
         full_response += chunk
         yield chunk
     add_message(session_id, "assistant", full_response)
