@@ -1,7 +1,7 @@
 from app.rag.retriever import get_retriever
 from app.rag.generator import generate_answer_stream
 from app.rag.vector_store import get_db
-from app.memory.chat_memory import create_session, add_message, set_title, get_history, get_sessions, chat_sessions
+from app.memory.chat_memory import create_session, add_message, set_title, get_history, get_sessions, chat_sessions, set_doc_id
 import uuid
 
 # ================= HELPERS =================
@@ -46,16 +46,22 @@ def _format_history(messages, max_turns: int = 6):
 
 # ================= MAIN PIPELINE =================
 
-async def rag_pipeline_stream(doc_id, question):
+async def rag_pipeline_stream(doc_id, question, session_id=None, file_name=None):
     db = get_db(doc_id)
     has_document = db is not None
     intent = detect_intent(question)
 
     # ---- SESSION MANAGEMENT ----
-    session_id = doc_id or str(uuid.uuid4())
+    # Each chat has its own session_id (so one document can host several chats,
+    # and a chat can outlive a single document). Fall back to doc_id for
+    # backward compatibility, then to a fresh id.
+    session_id = session_id or doc_id or str(uuid.uuid4())
     if session_id not in chat_sessions:
-        create_session(session_id, file_name="uploaded_doc.pdf")
+        create_session(session_id, file_name=file_name or "New chat", doc_id=doc_id)
         set_title(session_id, generate_chat_title(question))
+    elif doc_id:
+        # Keep the chat pointed at the most recently used document.
+        set_doc_id(session_id, doc_id)
 
     # Snapshot history BEFORE adding the current turn, then record the question.
     history = _format_history(get_history(session_id))

@@ -9,6 +9,7 @@ from app.rag.pipeline import rag_pipeline_stream
 from app.rag.ingestion import process_document
 from app.rag.vector_store import get_db
 from app.rag.loaders import load_document, is_supported, SUPPORTED_DOC_EXTENSIONS
+from app.memory.chat_memory import get_sessions, get_session, delete_session
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -19,8 +20,10 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 # ================= REQUEST MODEL =================
 
 class QueryRequest(BaseModel):
-    doc_id: str
+    doc_id: str = ""
     question: str
+    session_id: str | None = None
+    file_name: str | None = None
 
 
 # ================= BACKGROUND PROCESS =================
@@ -84,10 +87,39 @@ async def query_document(request: QueryRequest):
 
     generator = rag_pipeline_stream(
         request.doc_id,
-        request.question
+        request.question,
+        request.session_id,
+        request.file_name,
     )
 
     return StreamingResponse(generator, media_type="text/plain")
+
+
+# ================= CHAT SESSIONS (sidebar) =================
+
+@router.get("/sessions")
+def list_chat_sessions():
+    return {"sessions": get_sessions()}
+
+
+@router.get("/sessions/{session_id}")
+def get_chat_session(session_id: str):
+    s = get_session(session_id)
+    if not s:
+        return {"error": "Session not found"}
+    return {
+        "session_id": session_id,
+        "title": s.get("title"),
+        "file_name": s.get("file_name"),
+        "doc_id": s.get("doc_id"),
+        "messages": s.get("messages", []),
+    }
+
+
+@router.delete("/sessions/{session_id}")
+def remove_chat_session(session_id: str):
+    delete_session(session_id)
+    return {"ok": True}
 
 
 # ================= STATUS CHECK (OPTIONAL BUT USEFUL) =================

@@ -8,7 +8,11 @@ import {
   Loader2,
   Paperclip,
   Menu,
-  AlertCircle
+  AlertCircle,
+  Plus,
+  Search,
+  MessageSquare,
+  Trash2
 } from "lucide-react";
 import Markdown from "../components/Markdown";
 import { ThemeToggle } from "../components/ThemeProvider";
@@ -19,13 +23,14 @@ interface Message {
   hasDocument?: boolean;
 }
 
+const GREETING: Message = {
+  role: "assistant",
+  content:
+    "Hello! Upload a document and get insights, predictions and recommendations. I can also help with general sales, finance, and business topics.",
+};
+
 export function DocumentExtraction() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content: "Hello! Upload a document — PDF, Word, text, CSV, or Excel — and ask questions about it. I can also help with general sales, finance, and business topics."
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([GREETING]);
 
   const [input, setInput] = useState("");
   const [uploadedFile, setUploadedFile] = useState<File | { name: string } | null>(null);
@@ -33,6 +38,11 @@ export function DocumentExtraction() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Per-chat session + saved-chat list for the sidebar.
+  const [sessionId, setSessionId] = useState<string>(() => crypto.randomUUID());
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [chatSearch, setChatSearch] = useState("");
 
   // 🔥 NEW STATE (already present but now used properly)
   const [showPdf, setShowPdf] = useState(false);
@@ -45,6 +55,65 @@ export function DocumentExtraction() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isStreaming]);
+
+  // ================= CHAT SESSIONS =================
+  const fetchSessions = async () => {
+    try {
+      const res = await fetch(`${API}/documents/sessions`);
+      const data = await res.json();
+      setSessions(data.sessions || []);
+    } catch (err) {
+      console.error("Failed to load chats:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchSessions();
+  }, []);
+
+  const startNewChat = () => {
+    setSessionId(crypto.randomUUID());
+    setMessages([GREETING]);
+    setUploadedFile(null);
+    setDocId(null);
+    setShowPdf(false);
+    setInput("");
+  };
+
+  const loadChat = async (sid: string) => {
+    if (sid === sessionId) return;
+    try {
+      const res = await fetch(`${API}/documents/sessions/${sid}`);
+      const data = await res.json();
+      if (data.error) return;
+      setSessionId(sid);
+      setDocId(data.doc_id || null);
+      setUploadedFile(data.doc_id && data.file_name ? { name: data.file_name } : null);
+      const msgs: Message[] = (data.messages || []).map((m: any) => ({
+        role: m.role,
+        content: m.content,
+      }));
+      setMessages(msgs.length ? msgs : [GREETING]);
+      setShowPdf(false);
+    } catch (err) {
+      console.error("Failed to open chat:", err);
+    }
+  };
+
+  const deleteChat = async (sid: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await fetch(`${API}/documents/sessions/${sid}`, { method: "DELETE" });
+      if (sid === sessionId) startNewChat();
+      fetchSessions();
+    } catch (err) {
+      console.error("Failed to delete chat:", err);
+    }
+  };
+
+  const filteredSessions = sessions.filter((s) =>
+    (s.title || "").toLowerCase().includes(chatSearch.toLowerCase())
+  );
 
   // ================= FILE UPLOAD =================
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,7 +187,9 @@ export function DocumentExtraction() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           doc_id: docId || "",
-          question: question
+          question: question,
+          session_id: sessionId,
+          file_name: (uploadedFile as any)?.name || null
         })
       });
 
@@ -170,6 +241,8 @@ export function DocumentExtraction() {
       });
     } finally {
       setIsStreaming(false);
+      // Refresh the sidebar so a newly created chat appears with its title.
+      fetchSessions();
     }
   };
 
@@ -205,8 +278,68 @@ export function DocumentExtraction() {
       {/* 🔥 SPLIT VIEW */}
       <div className="flex flex-1 overflow-hidden">
 
+        {/* CHAT SIDEBAR */}
+        <aside
+          className={`${sidebarOpen ? "w-72" : "w-0"} shrink-0 overflow-hidden border-r border-slate-200 bg-white transition-all duration-300`}
+        >
+          <div className="w-72 h-full flex flex-col">
+            <div className="p-3 border-b border-slate-200 space-y-3">
+              <button
+                onClick={startNewChat}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 text-sm font-medium"
+              >
+                <Plus size={16} /> New Chat
+              </button>
+              <div className="relative">
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  value={chatSearch}
+                  onChange={(e) => setChatSearch(e.target.value)}
+                  placeholder="Search chats..."
+                  className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-2 space-y-1">
+              {filteredSessions.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center mt-6">
+                  {sessions.length ? "No matching chats" : "No saved chats yet"}
+                </p>
+              ) : (
+                filteredSessions.map((s) => (
+                  <div
+                    key={s.session_id}
+                    onClick={() => loadChat(s.session_id)}
+                    className={`group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-sm ${
+                      s.session_id === sessionId
+                        ? "bg-violet-50 text-violet-700"
+                        : "hover:bg-slate-100 text-slate-700"
+                    }`}
+                  >
+                    <MessageSquare size={15} className="shrink-0 opacity-70" />
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate">{s.title || "New chat"}</p>
+                      {s.file_name && s.file_name !== "New chat" && (
+                        <p className="truncate text-[11px] text-slate-400">{s.file_name}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={(e) => deleteChat(s.session_id, e)}
+                      className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-opacity"
+                      title="Delete chat"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </aside>
+
         {/* CHAT */}
-        <main className={`${showPdf ? "w-1/2" : "w-full"} overflow-y-auto px-6 py-8 transition-all`}>
+        <main className="flex-1 overflow-y-auto px-6 py-8 transition-all">
           <div className="max-w-4xl mx-auto space-y-6">
             {messages.map((message, idx) => (
               <div
