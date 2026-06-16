@@ -1,5 +1,6 @@
-from fastapi import APIRouter, UploadFile, File, BackgroundTasks
+from fastapi import APIRouter, UploadFile, File
 from fastapi.responses import StreamingResponse
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 import uuid
 import os
@@ -24,25 +25,27 @@ class QueryRequest(BaseModel):
 
 # ================= BACKGROUND PROCESS =================
 
-def process_document_async(file_path: str, doc_id: str):
+def index_document(file_path: str, doc_id: str) -> bool:
+    """Load, chunk and embed a file. Returns True on success."""
     try:
         documents = load_document(file_path)
+        if not documents:
+            print(f"[ERROR] No content extracted from {file_path}")
+            return False
 
         process_document(documents, doc_id)
-
         print(f"[SUCCESS] Document processed: {doc_id}")
+        return True
 
     except Exception as e:
         print(f"[ERROR] Processing failed for {doc_id}: {e}")
+        return False
 
 
 # ================= UPLOAD (OPTIMIZED) =================
 
 @router.post("/upload")
-async def upload_document(
-    background_tasks: BackgroundTasks,
-    file: UploadFile = File(...)
-):
+async def upload_document(file: UploadFile = File(...)):
 
     try:
         if not is_supported(file.filename or ""):
@@ -50,21 +53,21 @@ async def upload_document(
             return {"error": f"Unsupported file type. Supported formats: {allowed}."}
 
         doc_id = str(uuid.uuid4())
-
         file_path = os.path.join(UPLOAD_DIR, file.filename)
 
-        # 🔥 FAST FILE WRITE (no processing here)
         with open(file_path, "wb") as f:
             f.write(await file.read())
 
-        # 🔥 BACKGROUND PROCESSING
-        background_tasks.add_task(process_document_async, file_path, doc_id)
+        # Index synchronously (in a worker thread) so the file is queryable the
+        # moment we respond — no "indexed" claim before it is actually ready.
+        ok = await run_in_threadpool(index_document, file_path, doc_id)
+        if not ok:
+            return {"error": "Could not read or index this file. It may be empty, corrupted, or unsupported."}
 
-        # ⚡ RETURN IMMEDIATELY
         return {
             "doc_id": doc_id,
             "file_name": file.filename,
-            "status": "processing"
+            "status": "ready"
         }
 
     except Exception as e:
