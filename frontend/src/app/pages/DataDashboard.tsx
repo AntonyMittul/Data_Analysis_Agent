@@ -811,17 +811,29 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       className="bg-white rounded-xl p-6 w-[95%] max-w-6xl shadow-xl overflow-auto max-h-[80vh]"
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="flex justify-between mb-4">
-        <h2 className="text-xl font-bold">Dataset Preview</h2>
-        <button onClick={() => setShowDataModal(false)}>✕</button>
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h2 className="text-xl font-bold">Dataset Preview</h2>
+          <p className="text-sm text-slate-500">
+            Showing first {tableData.length} rows
+            {datasetStats?.rows ? ` of ${Number(datasetStats.rows).toLocaleString()}` : ""}
+            {columns.length ? ` · ${columns.length} columns` : ""}
+          </p>
+        </div>
+        <button
+          onClick={() => setShowDataModal(false)}
+          className="text-slate-400 hover:text-slate-700 text-lg leading-none"
+        >
+          ✕
+        </button>
       </div>
 
-      <div className="overflow-auto">
-        <table className="min-w-full border text-sm">
-          <thead className="bg-gray-100">
+      <div className="overflow-auto border border-slate-200 rounded-lg">
+        <table className="min-w-full text-sm">
+          <thead className="bg-slate-100 sticky top-0">
             <tr>
               {columns.map((col, idx) => (
-                <th key={idx} className="p-2 border">
+                <th key={idx} className="p-2 border-b border-slate-200 text-left font-semibold whitespace-nowrap">
                   {col}
                 </th>
               ))}
@@ -830,10 +842,10 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
           <tbody>
             {tableData.map((row, i) => (
-              <tr key={i}>
+              <tr key={i} className={i % 2 ? "bg-slate-50" : "bg-white"}>
                 {columns.map((col, j) => (
-                  <td key={j} className="p-2 border">
-                    {row[col]?.toString()}
+                  <td key={j} className="p-2 border-b border-slate-100 whitespace-nowrap">
+                    {row[col] === null || row[col] === undefined ? "" : row[col].toString()}
                   </td>
                 ))}
               </tr>

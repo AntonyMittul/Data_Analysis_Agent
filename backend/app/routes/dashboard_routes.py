@@ -125,16 +125,31 @@ def get_insights(file_path: str):
 
 
 @router.get("/preview")
-def preview_data(file_path: str):
-    from app.services.dataset_loader import load_dataset
+def preview_data(file_path: str, limit: int = 100):
+    """Return a small, JSON-safe sample of the raw file.
+
+    Only the first `limit` rows are read/serialized — returning the entire
+    dataset (which could be hundreds of thousands of rows) made the endpoint
+    hang and ship tens of MB of JSON.
+    """
+    import pandas as pd
 
     try:
-        df = load_dataset(file_path)
+        if file_path.endswith(".csv"):
+            df = pd.read_csv(file_path, nrows=limit)
+        elif file_path.endswith(".xlsx"):
+            df = pd.read_excel(file_path, nrows=limit)
+        else:
+            return {"status": "error", "columns": [], "rows": [], "message": "Unsupported file format"}
+
+        # Make every cell JSON-safe (NaN -> None, timestamps/objects -> str-friendly).
+        safe = df.astype(object).where(pd.notnull(df), None)
 
         return {
             "status": "success",
-            "columns": df.columns.tolist(),
-            "rows": df.to_dict(orient="records")
+            "columns": list(df.columns),
+            "rows": safe.to_dict(orient="records"),
+            "showing": len(df),
         }
 
     except Exception as e:
@@ -142,5 +157,5 @@ def preview_data(file_path: str):
         return {
             "status": "error",
             "columns": [],
-            "rows": []
+            "rows": [],
         }
