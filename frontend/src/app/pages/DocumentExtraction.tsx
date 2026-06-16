@@ -10,6 +10,7 @@ import {
   Menu,
   AlertCircle
 } from "lucide-react";
+import Markdown from "../components/Markdown";
 
 interface Message {
   role: "user" | "assistant";
@@ -213,15 +214,17 @@ export function DocumentExtraction() {
                     </div>
                   )}
 
-                  <div className="whitespace-pre-wrap leading-relaxed">
+                  <div className="leading-relaxed">
                     {message.content === "" && isStreaming ? (
                       <div className="flex gap-1 py-1">
                         <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" />
                         <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.2s]" />
                         <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.4s]" />
                       </div>
+                    ) : message.role === "user" ? (
+                      <div className="whitespace-pre-wrap">{message.content}</div>
                     ) : (
-                      message.content
+                      <Markdown>{message.content}</Markdown>
                     )}
                   </div>
                 </div>

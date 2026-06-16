@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { classifyCharts } from "../../utils/ChartClassifier";
+import Markdown from "../components/Markdown";
 
 // ================= TYPES =================
 interface ChartData {
@@ -76,45 +77,9 @@ const transformToPlotly = (chart: any) => {
 
 // ================= UI HELPERS =================
 
-const renderInlineText = (text: string) => {
-  return text.split("\n").map((line, i) => <div key={i}>{line}</div>);
-};
-
 const renderMessageContent = (content: string) => {
   if (!content) return null;
-
-  const lines = content.split("\n");
-
-  return (
-    <div className="space-y-2 text-sm leading-relaxed">
-      {lines.map((line, i) => {
-
-        // 🔥 HEADINGS
-        if (line.toLowerCase().includes("key trends")) {
-          return <h3 key={i} className="font-bold text-base mt-3">Key Trends</h3>;
-        }
-
-        if (line.toLowerCase().includes("issues")) {
-          return <h3 key={i} className="font-bold text-base mt-3">Issues</h3>;
-        }
-
-        if (line.toLowerCase().includes("recommendations")) {
-          return <h3 key={i} className="font-bold text-base mt-3">Recommendations</h3>;
-        }
-
-        // 🔥 NUMBERED POINTS
-        if (/^\d+\./.test(line.trim())) {
-          return (
-            <p key={i} className="ml-3">
-              {line}
-            </p>
-          );
-        }
-
-        return <p key={i}>{line}</p>;
-      })}
-    </div>
-  );
+  return <Markdown>{content}</Markdown>;
 };
 
 const DashboardSkeleton = () => (
