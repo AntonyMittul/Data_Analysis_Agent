@@ -11,6 +11,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import Markdown from "../components/Markdown";
+import { ThemeToggle } from "../components/ThemeProvider";
 
 interface Message {
   role: "user" | "assistant";
@@ -187,15 +188,18 @@ export function DocumentExtraction() {
           Document Intelligence
         </h1>
 
-        {uploadedFile && (
-          <div
-            className="ml-auto flex items-center gap-2 text-sm font-medium text-violet-600 bg-violet-50 px-3 py-1 rounded-full cursor-pointer hover:bg-violet-100 transition"
-            onClick={() => setShowPdf(prev => !prev)} // 🔥 CLICK TO TOGGLE PDF
-          >
-            <FileText size={16} />
-            {uploadedFile.name}
-          </div>
-        )}
+        <div className="ml-auto flex items-center gap-2">
+          {uploadedFile && (
+            <div
+              className="flex items-center gap-2 text-sm font-medium text-violet-600 bg-violet-50 px-3 py-1 rounded-full cursor-pointer hover:bg-violet-100 transition"
+              onClick={() => setShowPdf(prev => !prev)} // 🔥 CLICK TO TOGGLE PDF
+            >
+              <FileText size={16} />
+              {uploadedFile.name}
+            </div>
+          )}
+          <ThemeToggle />
+        </div>
       </header>
 
       {/* 🔥 SPLIT VIEW */}

@@ -1,9 +1,11 @@
 import { Link } from 'react-router';
 import { BarChart3, FileText } from 'lucide-react';
+import { ThemeToggle } from '../components/ThemeProvider';
 
 export function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 flex items-center justify-center p-6">
+      <ThemeToggle className="absolute top-6 right-6" />
       <div className="max-w-4xl w-full">
         <div className="text-center mb-12">
           <h1 className="text-5xl mb-4 bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">

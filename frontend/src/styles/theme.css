@@ -179,3 +179,53 @@
     line-height: 1.5;
   }
 }
+
+/* =====================================================================
+   DARK MODE
+   The pages use hard-coded neutral utilities (bg-white, bg-slate-*,
+   text-slate-*, border-slate-*). These rules remap those neutrals when
+   the .dark class is on <html>, so the whole UI adapts to the theme
+   while colored accents (blue/violet/green buttons) stay intact.
+   ===================================================================== */
+.dark body {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+/* --- Surfaces --- */
+.dark .bg-white { background-color: #1e293b; }
+.dark .bg-slate-50,
+.dark .bg-gray-50 { background-color: #0f172a; }
+.dark .bg-slate-100,
+.dark .bg-gray-100 { background-color: #334155; }
+.dark .bg-slate-200,
+.dark .bg-gray-200 { background-color: #334155; }
+.dark .bg-slate-300 { background-color: #475569; }
+.dark .bg-slate-400 { background-color: #64748b; }
+
+/* --- Hover / focus surfaces --- */
+.dark .hover\:bg-slate-100:hover,
+.dark .hover\:bg-gray-100:hover { background-color: #334155; }
+.dark .focus\:bg-white:focus { background-color: #1e293b; }
+
+/* --- Text --- */
+.dark .text-slate-900,
+.dark .text-gray-900,
+.dark .text-slate-800,
+.dark .text-gray-800 { color: #f1f5f9; }
+.dark .text-slate-700,
+.dark .text-gray-700,
+.dark .text-slate-600,
+.dark .text-gray-600 { color: #cbd5e1; }
+.dark .text-slate-500,
+.dark .text-gray-500,
+.dark .text-slate-400,
+.dark .text-gray-400 { color: #94a3b8; }
+.dark .hover\:text-slate-900:hover,
+.dark .hover\:text-slate-800:hover,
+.dark .hover\:text-slate-700:hover,
+.dark .hover\:text-gray-600:hover { color: #f1f5f9; }
+
+/* --- Borders --- */
+.dark .border-slate-200 { border-color: #334155; }
+.dark .border-slate-100 { border-color: #1f2937; }

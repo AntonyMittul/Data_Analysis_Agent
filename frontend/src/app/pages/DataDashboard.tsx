@@ -23,6 +23,7 @@ import {
 
 import { classifyCharts } from "../../utils/ChartClassifier";
 import Markdown from "../components/Markdown";
+import { ThemeToggle, useTheme } from "../components/ThemeProvider";
 
 // ================= TYPES =================
 interface ChartData {
@@ -212,6 +213,19 @@ export function DataDashboard() {
   const [tableData, setTableData] = useState<any[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
   const API_URL = "http://127.0.0.1:8000";
+  const { dark } = useTheme();
+
+  // Plotly layout overrides so charts blend into the light/dark theme.
+  const themedPlotLayout = dark
+    ? {
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        font: { color: "#cbd5e1" },
+      }
+    : {
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+      };
 
   // ================= ADD THESE STATES (keep with other useState) =================
   
@@ -525,6 +539,8 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
             {/* ✅ RIGHT SIDE (FIXED) */}
             <div className="flex items-center gap-2">
 
+              <ThemeToggle />
+
               <button
                 onClick={() => fileInputRef.current?.click()}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -637,6 +653,7 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 ]}
   layout={{
     ...chart.layout,
+    ...themedPlotLayout,
 
     title: "",
 
@@ -793,6 +810,7 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         data={selectedChart.data}
         layout={{
           ...selectedChart.layout,
+          ...themedPlotLayout,
           height: 600,   // 🔥 BIG VIEW
         }}
         style={{ width: "100%", height: "600px" }}
