@@ -1,13 +1,13 @@
 from fastapi import APIRouter, UploadFile, File, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from langchain_community.document_loaders import PyPDFLoader
 import uuid
 import os
 
 from app.rag.pipeline import rag_pipeline_stream
 from app.rag.ingestion import process_document
 from app.rag.vector_store import get_db
+from app.rag.loaders import load_document, is_supported, SUPPORTED_DOC_EXTENSIONS
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -26,8 +26,7 @@ class QueryRequest(BaseModel):
 
 def process_document_async(file_path: str, doc_id: str):
     try:
-        loader = PyPDFLoader(file_path)
-        documents = loader.load()
+        documents = load_document(file_path)
 
         process_document(documents, doc_id)
 
@@ -46,6 +45,10 @@ async def upload_document(
 ):
 
     try:
+        if not is_supported(file.filename or ""):
+            allowed = ", ".join(sorted(e.lstrip(".") for e in SUPPORTED_DOC_EXTENSIONS))
+            return {"error": f"Unsupported file type. Supported formats: {allowed}."}
+
         doc_id = str(uuid.uuid4())
 
         file_path = os.path.join(UPLOAD_DIR, file.filename)

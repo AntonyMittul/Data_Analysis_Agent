@@ -22,7 +22,7 @@ export function DocumentExtraction() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hello! Upload a PDF or DOCX document and ask questions about it."
+      content: "Hello! Upload a document — PDF, Word, text, CSV, or Excel — and ask questions about it. I can also help with general sales, finance, and business topics."
     }
   ]);
 
@@ -63,6 +63,14 @@ export function DocumentExtraction() {
 
       if (!res.ok) throw new Error("Upload failed");
       const data = await res.json();
+
+      if (data.error) {
+        setMessages(prev => [
+          ...prev,
+          { role: "assistant", content: `⚠️ ${data.error}` }
+        ]);
+        return;
+      }
 
       setUploadedFile(file);
       setDocId(data.doc_id || data.id);
@@ -234,14 +242,25 @@ export function DocumentExtraction() {
           </div>
         </main>
 
-        {/* 🔥 PDF VIEWER */}
+        {/* 🔥 DOCUMENT VIEWER (inline for PDF/TXT, fallback for others) */}
         {showPdf && uploadedFile && (
           <div className="w-1/2 border-l border-slate-200 bg-white">
-            <iframe
-              src={`${API}/uploads/${uploadedFile.name}`}
-              title="PDF Viewer"
-              className="w-full h-full"
-            />
+            {/\.(pdf|txt)$/i.test(uploadedFile.name) ? (
+              <iframe
+                src={`${API}/uploads/${encodeURIComponent(uploadedFile.name)}`}
+                title="Document Viewer"
+                className="w-full h-full"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full p-8 text-center text-slate-500">
+                <FileText size={48} className="mb-4 text-violet-400" />
+                <p className="font-medium text-slate-700">{uploadedFile.name}</p>
+                <p className="text-sm mt-2">
+                  Inline preview isn't available for this file type, but its
+                  content has been indexed — ask your questions in the chat.
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -262,7 +281,7 @@ export function DocumentExtraction() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.docx"
+              accept=".pdf,.docx,.txt,.csv,.xlsx,.xls"
               onChange={handleFileUpload}
               className="hidden"
             />
