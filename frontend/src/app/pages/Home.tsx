@@ -28,7 +28,7 @@ export function Home() {
               </div>
               <h2 className="text-2xl mb-2 text-slate-800">Data Dashboard</h2>
               <p className="text-slate-600">
-                Upload CSV/XLSX files for dynamic visualizations, trend analysis, and AI-powered insights
+                Turn raw spreadsheets into interactive charts, trends, and AI-generated business insights — in seconds.
               </p>
             </div>
           </Link>
@@ -44,7 +44,7 @@ export function Home() {
               </div>
               <h2 className="text-2xl mb-2 text-slate-800">Document Intelligence</h2>
               <p className="text-slate-600">
-                Extract insights from PDF/DOCX financial statements and reports using RAG-powered chat
+                Chat with your documents and get instant, sourced answers from reports, policies, and contracts.
               </p>
             </div>
           </Link>
