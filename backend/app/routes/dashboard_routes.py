@@ -4,7 +4,7 @@ import threading
 
 from app.services.dataset_loader import load_dataset
 from app.services.data_profiler import profile_dataset
-from app.services.visualization_engine import generate_visualizations
+from app.services.visualization_engine import generate_visualizations, build_kpi_cards
 from app.services.insight_generator import generate_insights
 
 router = APIRouter()
@@ -33,13 +33,15 @@ def generate_insights_background(file_path, profile, charts):
 @router.get("/analyze")
 def analyze_dataset(file_path: str):
     try:
-        df = load_dataset(file_path)
+        df, quality = load_dataset(file_path, return_quality=True)
 
         dataset_stats = {
-            "file_name": file_path.split("/")[-1],
+            "file_name": file_path.replace("\\", "/").split("/")[-1],
             "rows": len(df),
             "columns": len(df.columns),
-            "missing_values": int(df.isnull().sum().sum())
+            "missing_values": quality.get("missing_cells", 0),
+            "duplicate_rows": quality.get("duplicate_rows", 0),
+            "cards": build_kpi_cards(df, quality),
         }
 
         # ✅ parallel execution (FAST)

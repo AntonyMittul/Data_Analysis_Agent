@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router";
 import Plot from "react-plotly.js";
 import {
@@ -12,7 +12,13 @@ import {
   BarChart2,
   TrendingUp,
   AlertCircle,
-  MessageSquare
+  MessageSquare,
+  Database,
+  Columns3,
+  CheckCircle2,
+  Calendar,
+  Trophy,
+  Check
 } from "lucide-react";
 
 import { classifyCharts } from "../../utils/ChartClassifier";
@@ -82,26 +88,83 @@ const renderMessageContent = (content: string) => {
   return <Markdown>{content}</Markdown>;
 };
 
-const DashboardSkeleton = () => (
-  <div className="space-y-6 animate-pulse">
-    <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-    <div className="grid grid-cols-4 gap-4">
-      {[1, 2, 3, 4].map(i => (
-        <div key={i} className="h-20 bg-gray-200 rounded"></div>
-      ))}
+const LOADING_STEPS = [
+  "Uploading dataset",
+  "Identifying inconsistencies",
+  "Cleaning & preprocessing",
+  "Generating visuals",
+];
+
+const LoadingSequence = ({ step }: { step: number }) => (
+  <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 max-w-md mx-auto mt-10 animate-in fade-in duration-300">
+    <div className="flex items-center gap-3 mb-6">
+      <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+      <h3 className="text-lg font-semibold text-slate-800">Analyzing your dataset…</h3>
+    </div>
+    <div className="space-y-4">
+      {LOADING_STEPS.map((label, i) => {
+        const done = i < step;
+        const active = i === step;
+        return (
+          <div key={i} className="flex items-center gap-3">
+            <span
+              className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold transition-colors ${
+                done
+                  ? "bg-green-500 text-white"
+                  : active
+                  ? "bg-blue-100 text-blue-600"
+                  : "bg-slate-100 text-slate-400"
+              }`}
+            >
+              {done ? <Check size={14} /> : active ? <Loader2 size={14} className="animate-spin" /> : i + 1}
+            </span>
+            <span
+              className={`text-sm transition-colors ${
+                done ? "text-slate-400" : active ? "text-slate-800 font-medium" : "text-slate-400"
+              }`}
+            >
+              {label}
+              {active ? "…" : ""}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+    <div className="mt-6 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+      <div
+        className="h-full bg-blue-600 transition-all duration-500 ease-out"
+        style={{ width: `${((step + 1) / LOADING_STEPS.length) * 100}%` }}
+      />
     </div>
   </div>
 );
 
-const KPICard = ({ title, value, icon: Icon }: any) => (
-  <div className="bg-white p-5 rounded-xl shadow-sm border flex justify-between">
-    <div>
-      <p className="text-sm text-slate-500">{title}</p>
-      <h4 className="text-xl font-bold">{value}</h4>
+const KPI_ICONS: Record<string, any> = {
+  database: Database,
+  columns: Columns3,
+  check: CheckCircle2,
+  calendar: Calendar,
+  trophy: Trophy,
+  trending: TrendingUp,
+};
+
+const KPICard = ({ title, value, subtitle, icon }: any) => {
+  const Icon = typeof icon === "string" ? KPI_ICONS[icon] || BarChart2 : icon || BarChart2;
+  return (
+    <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition">
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm text-slate-500">{title}</p>
+        <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+          <Icon size={18} />
+        </div>
+      </div>
+      <h4 className="text-2xl font-bold text-slate-800 mt-2 truncate" title={String(value)}>
+        {value}
+      </h4>
+      {subtitle && <p className="text-xs text-slate-400 mt-1 truncate" title={subtitle}>{subtitle}</p>}
     </div>
-    <Icon />
-  </div>
-);
+  );
+};
 
 const ChartCard = ({ title, children, onClick }: any) => (
   <div
@@ -129,7 +192,18 @@ export function DataDashboard() {
 
   const [chatInput, setChatInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
   const [dashboardInsights, setDashboardInsights] = useState<string | null>(null);
+
+  // Advance the loading sequence while analysis runs.
+  useEffect(() => {
+    if (!isLoading) return;
+    setLoadingStep(0);
+    const id = setInterval(() => {
+      setLoadingStep((s) => (s < LOADING_STEPS.length - 1 ? s + 1 : s));
+    }, 1100);
+    return () => clearInterval(id);
+  }, [isLoading]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [datasetStats, setDatasetStats] = useState<any>(null);
@@ -405,28 +479,20 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
   // ================= KPI =================
 
-  const kpis = datasetStats ? [
-  {
-    title: "Dataset",
-    value: datasetStats.file_name,
-    icon: BarChart2
-  },
-  {
-    title: "Dimensions",
-    value: `${datasetStats.rows} × ${datasetStats.columns}`,
-    icon: TrendingUp
-  },
-  {
-    title: "Missing Values",
-    value: datasetStats.missing_values,
-    icon: AlertCircle
-  },
-  {
-    title: "Data Quality",
-    value: datasetStats.missing_values > 0 ? "Needs Attention" : "Clean",
-    icon: MessageSquare
-  }
-] : [];
+  const kpis = datasetStats?.cards?.length
+    ? datasetStats.cards
+    : datasetStats
+    ? [
+        { title: "Records", value: datasetStats.rows, subtitle: `${datasetStats.columns} columns`, icon: "database" },
+        { title: "Dimensions", value: `${datasetStats.rows} × ${datasetStats.columns}`, icon: "columns" },
+        { title: "Missing Values", value: datasetStats.missing_values, icon: "check" },
+        {
+          title: "Data Quality",
+          value: datasetStats.missing_values > 0 ? "Needs Attention" : "Clean",
+          icon: "check",
+        },
+      ]
+    : [];
 
   const categorizedCharts = classifyCharts(chartData);
 
@@ -524,7 +590,7 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
           {isLoading && (
             <div className="w-full mt-4">
-              <DashboardSkeleton />
+              <LoadingSequence step={loadingStep} />
             </div>
           )}
 

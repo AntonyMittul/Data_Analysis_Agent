@@ -1,7 +1,7 @@
 import pandas as pd
 
 
-def load_dataset(file_path: str):
+def load_dataset(file_path: str, return_quality: bool = False):
 
     # -----------------------------
     # Load dataset
@@ -14,6 +14,21 @@ def load_dataset(file_path: str):
 
     else:
         raise ValueError("Unsupported file format")
+
+    # -----------------------------
+    # Capture raw-data quality BEFORE cleaning, so the dashboard can report
+    # what was actually wrong with the uploaded file.
+    # -----------------------------
+    quality = {
+        "raw_rows": int(len(df)),
+        "total_cells": int(df.size),
+        "missing_cells": int(df.isnull().sum().sum()),
+        "duplicate_rows": int(df.duplicated().sum()),
+    }
+    quality["missing_pct"] = (
+        round(100 * quality["missing_cells"] / quality["total_cells"], 1)
+        if quality["total_cells"] else 0.0
+    )
 
     # -----------------------------
     # Remove duplicate rows
@@ -59,4 +74,6 @@ def load_dataset(file_path: str):
     for col in cat_cols:
         df[col] = df[col].fillna("Unknown")
 
+    if return_quality:
+        return df, quality
     return df

@@ -318,3 +318,99 @@ def generate_visualizations(df: pd.DataFrame):
             print("[VISUAL BUILD ERROR]:", e)
 
     return visuals
+
+
+# ===============================
+# KPI CARDS (dataset-driven headline stats)
+# ===============================
+def _fmt_number(x):
+    try:
+        x = float(x)
+    except Exception:
+        return str(x)
+    for unit, div in (("B", 1e9), ("M", 1e6), ("K", 1e3)):
+        if abs(x) >= div:
+            return f"{x / div:.1f}{unit}".replace(".0", "")
+    return f"{x:,.0f}" if float(x).is_integer() else f"{x:,.2f}"
+
+
+def build_kpi_cards(df: pd.DataFrame, quality: dict | None = None):
+    """Produce 4 information-dense, dataset-specific KPI cards for the dashboard."""
+    quality = quality or {}
+    clean = preprocess_data(df)
+    measures, categoricals, datetimes, years, ids = classify_columns(clean)
+    cards = []
+
+    # 1) Records
+    cards.append({
+        "title": "Records",
+        "value": _fmt_number(len(df)),
+        "subtitle": f"{df.shape[1]} columns",
+        "icon": "database",
+    })
+
+    # 2) Feature breakdown
+    parts = []
+    if measures:
+        parts.append(f"{len(measures)} numeric")
+    if categoricals:
+        parts.append(f"{len(categoricals)} categorical")
+    if years or datetimes:
+        parts.append(f"{len(years) + len(datetimes)} time")
+    if ids:
+        parts.append(f"{len(ids)} id/other")
+    cards.append({
+        "title": "Features",
+        "value": str(df.shape[1]),
+        "subtitle": " · ".join(parts) or "mixed types",
+        "icon": "columns",
+    })
+
+    # 3) Data quality (from the raw, pre-cleaning file)
+    miss = quality.get("missing_cells", 0)
+    dup = quality.get("duplicate_rows", 0)
+    if miss == 0 and dup == 0:
+        q_val, q_sub = "Clean", "no missing values or duplicates"
+    else:
+        q_val = f"{100 - quality.get('missing_pct', 0):.0f}% complete"
+        bits = []
+        if miss:
+            bits.append(f"{_fmt_number(miss)} missing cells")
+        if dup:
+            bits.append(f"{_fmt_number(dup)} duplicate rows")
+        q_sub = " · ".join(bits) + " (cleaned)"
+    cards.append({"title": "Data Quality", "value": q_val, "subtitle": q_sub, "icon": "check"})
+
+    # 4) A content highlight chosen from the data itself
+    highlight = None
+    if years:
+        col = years[0]
+        v = pd.to_numeric(clean[col], errors="coerce").dropna()
+        if len(v):
+            lo, hi = int(v.min()), int(v.max())
+            highlight = {"title": "Time span", "value": f"{lo}–{hi}",
+                         "subtitle": f"{hi - lo} years", "icon": "calendar"}
+    if highlight is None and datetimes:
+        col = datetimes[0]
+        d = clean[col].dropna()
+        if len(d):
+            highlight = {"title": "Date range",
+                         "value": f"{d.min():%b %Y} – {d.max():%b %Y}",
+                         "subtitle": col, "icon": "calendar"}
+    if highlight is None and categoricals:
+        col = categoricals[0]
+        vc = clean[col].value_counts(normalize=True)
+        if len(vc):
+            highlight = {"title": f"Top {col}", "value": str(vc.index[0]),
+                         "subtitle": f"{vc.iloc[0] * 100:.0f}% of records", "icon": "trophy"}
+    if highlight is None and measures:
+        col = measures[0]
+        agg = _aggregation_for(col, clean[col])
+        val = getattr(clean[col], agg)()
+        label = "Avg" if agg == "mean" else "Total"
+        highlight = {"title": f"{label} {col}", "value": _fmt_number(val),
+                     "subtitle": "across all records", "icon": "trending"}
+    if highlight:
+        cards.append(highlight)
+
+    return cards
