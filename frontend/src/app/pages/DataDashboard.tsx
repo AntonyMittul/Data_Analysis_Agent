@@ -702,31 +702,33 @@ const handleChartClick = (chart: ChartData, event: any) => {
 
               <ThemeToggle />
 
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                <Upload className="w-4 h-4"/>
-                Upload Data
-              </button>
-
-              <button
-                onClick={fetchPreviewData}
-                className="bg-gray-200 px-4 py-2 rounded-lg"
-              >
-                View Data
-              </button>
-
               {chartData.length > 0 && (
-                <button
-                  onClick={handleDownloadPdf}
-                  disabled={isExporting}
-                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-60"
-                  title="Download all visuals as a PDF report"
-                >
-                  {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                  {isExporting ? "Preparing…" : "Download PDF"}
-                </button>
+                <>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    <Upload className="w-4 h-4"/>
+                    Upload Data
+                  </button>
+
+                  <button
+                    onClick={fetchPreviewData}
+                    className="bg-gray-200 px-4 py-2 rounded-lg"
+                  >
+                    View Data
+                  </button>
+
+                  <button
+                    onClick={handleDownloadPdf}
+                    disabled={isExporting}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-60"
+                    title="Download all visuals as a PDF report"
+                  >
+                    {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                    {isExporting ? "Preparing…" : "Download PDF"}
+                  </button>
+                </>
               )}
 
             </div>
@@ -756,19 +758,21 @@ const handleChartClick = (chart: ChartData, event: any) => {
                   <Upload className="w-12 h-12 text-slate-400"/>
                 </div>
 
-                <h2 className="text-2xl text-slate-700">
-                  No data uploaded
+                <h2 className="text-2xl font-bold text-slate-800">
+                  Turn your data into decisions
                 </h2>
 
-                <p className="text-slate-500 mb-6">
-                  Upload a CSV or XLSX file to generate visualizations
+                <p className="text-slate-500 mb-6 max-w-md mx-auto">
+                  Upload a CSV or Excel file and your AI analyst will profile it,
+                  surface key trends, and build an interactive executive dashboard in seconds.
                 </p>
 
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  Upload File
+                  <Upload className="w-4 h-4" />
+                  Upload Dataset
                 </button>
 
               </div>
