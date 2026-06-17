@@ -720,9 +720,11 @@ const handleChartClick = (chart: ChartData, event: any) => {
                 <ArrowLeft className="w-5 h-5"/>
               </Link>
 
-              <h1 className="text-2xl text-slate-800">
-                Executive Dashboard
-              </h1>
+              {chartData.length > 0 && (
+                <h1 className="text-2xl text-slate-800">
+                  Executive Dashboard
+                </h1>
+              )}
 
             </div>
 
