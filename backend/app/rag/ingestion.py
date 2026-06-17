@@ -6,3 +6,5 @@ def process_document(documents, doc_id):
     chunks = chunk_documents(documents)
 
     store_documents(chunks, doc_id)
+
+    return len(chunks)

@@ -10,17 +10,11 @@ Two tables:
 """
 import os
 import json
-import sqlite3
-import threading
 from datetime import datetime
 
-DB_PATH = os.getenv("CHAT_DB_PATH", "chat.db")
-LEGACY_DIR = "sessions"  # old JSON store (migrated once, then ignored)
+from app.memory.db import conn as _conn, lock as _lock
 
-# One shared connection; a lock keeps concurrent FastAPI requests safe.
-_conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-_conn.row_factory = sqlite3.Row
-_lock = threading.Lock()
+LEGACY_DIR = "sessions"  # old JSON store (migrated once, then ignored)
 
 
 def _now() -> str:

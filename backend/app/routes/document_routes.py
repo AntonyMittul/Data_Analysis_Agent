@@ -10,6 +10,7 @@ from app.rag.ingestion import process_document
 from app.rag.vector_store import get_db
 from app.rag.loaders import load_document, is_supported, SUPPORTED_DOC_EXTENSIONS
 from app.memory.chat_memory import get_sessions, get_session, delete_session
+from app.memory.document_store import record_document, list_documents, delete_document
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -29,14 +30,28 @@ class QueryRequest(BaseModel):
 # ================= BACKGROUND PROCESS =================
 
 def index_document(file_path: str, doc_id: str) -> bool:
-    """Load, chunk and embed a file. Returns True on success."""
+    """Load, chunk and embed a file, then record its metadata. Returns True on success."""
     try:
         documents = load_document(file_path)
         if not documents:
             print(f"[ERROR] No content extracted from {file_path}")
             return False
 
-        process_document(documents, doc_id)
+        chunks = process_document(documents, doc_id)
+
+        # Save a record of this upload in the database.
+        try:
+            record_document(
+                doc_id=doc_id,
+                file_name=os.path.basename(file_path),
+                file_type=os.path.splitext(file_path)[1].lstrip(".").lower(),
+                size_kb=os.path.getsize(file_path) / 1024,
+                pages=len(documents),
+                chunks=chunks,
+            )
+        except Exception as meta_err:
+            print(f"[WARN] Could not record document metadata: {meta_err}")
+
         print(f"[SUCCESS] Document processed: {doc_id}")
         return True
 
@@ -120,6 +135,19 @@ def get_chat_session(session_id: str):
 @router.delete("/sessions/{session_id}")
 def remove_chat_session(session_id: str):
     delete_session(session_id)
+    return {"ok": True}
+
+
+# ================= DOCUMENT LIBRARY (upload history) =================
+
+@router.get("/library")
+def document_library():
+    return {"documents": list_documents()}
+
+
+@router.delete("/library/{doc_id}")
+def remove_document(doc_id: str):
+    delete_document(doc_id)
     return {"ok": True}
 
 
