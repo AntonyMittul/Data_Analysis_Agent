@@ -80,3 +80,26 @@ The frontend expects the backend at `http://localhost:8000`.
 
 - `backend/.env` is git-ignored — your API key never leaves your machine.
 - `uploads/`, `vector_db/`, `sessions/`, and `data/` are runtime artifacts and are git-ignored.
+
+## Deployment
+
+Deploy the **backend on Render** and the **frontend on Vercel** (a static SPA can't host the
+FastAPI server, which needs an always-on Python process and disk for the vector store / SQLite).
+
+### 1. Backend → Render
+1. Push this repo to GitHub.
+2. Render Dashboard → **New → Blueprint** → select this repo (it uses `render.yaml`).
+3. After it creates the service, open **Environment** and set `GOOGLE_API_KEY` to your Gemini key.
+4. Deploy. Note the service URL, e.g. `https://datasense-ai-api.onrender.com`.
+
+> Free tier note: the disk is ephemeral, so uploaded files / vector indexes reset when the
+> service sleeps or redeploys. For permanent storage, add a Render **persistent disk** (paid)
+> mounted at the backend working directory.
+
+### 2. Frontend → Vercel
+1. Vercel → **New Project** → import this repo.
+2. Set **Root Directory** to `frontend` (Vercel auto-detects Vite).
+3. Add an environment variable **`VITE_API_URL`** = your Render backend URL (no trailing slash).
+4. Deploy. `vercel.json` handles SPA routing.
+
+That's it — the frontend calls the backend via `VITE_API_URL`; CORS is already open on the API.

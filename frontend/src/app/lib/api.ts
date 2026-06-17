@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:8000"
+import { API_BASE } from "./config"
 
 export async function uploadDataset(file: File) {
   const formData = new FormData()

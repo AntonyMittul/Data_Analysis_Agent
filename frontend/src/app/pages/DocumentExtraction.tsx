@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Markdown from "../components/Markdown";
 import { ThemeToggle } from "../components/ThemeProvider";
+import { API_BASE } from "../lib/config";
 
 interface Citation {
   page: number | null;
@@ -190,7 +191,7 @@ export function DocumentExtraction() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const API = "http://127.0.0.1:8000";
+  const API = API_BASE;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

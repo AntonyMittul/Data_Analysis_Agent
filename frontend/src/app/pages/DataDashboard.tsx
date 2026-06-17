@@ -28,6 +28,7 @@ import { classifyCharts } from "../../utils/ChartClassifier";
 import Markdown from "../components/Markdown";
 import { ThemeToggle, useTheme } from "../components/ThemeProvider";
 import { exportDashboardPdf } from "../lib/exportPdf";
+import { API_BASE } from "../lib/config";
 
 // ================= TYPES =================
 interface ChartData {
@@ -246,7 +247,7 @@ export function DataDashboard() {
   const [showDataModal, setShowDataModal] = useState(false);
   const [tableData, setTableData] = useState<any[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
-  const API_URL = "http://127.0.0.1:8000";
+  const API_URL = API_BASE;
   const { dark } = useTheme();
 
   // Plotly layout overrides so charts blend into the light/dark theme.
