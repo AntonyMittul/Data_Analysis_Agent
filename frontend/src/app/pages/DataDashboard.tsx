@@ -228,6 +228,8 @@ export function DataDashboard() {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [ranges, setRanges] = useState<Record<string, [number, number]>>({});
   const [isFiltering, setIsFiltering] = useState(false);
+  const [summaryStale, setSummaryStale] = useState(false);
+  const [refreshingSummary, setRefreshingSummary] = useState(false);
   const [selectedChart, setSelectedChart] = useState<ChartData | null>(null);
   const [showDataModal, setShowDataModal] = useState(false);
   const [tableData, setTableData] = useState<any[]>([]);
@@ -308,14 +310,19 @@ const pollInsights = async (path: string) => {
       // ✅ SET INSIGHTS
       setDashboardInsights(insights);
 
-      // ✅ UPDATE CHATBOT IMMEDIATELY (summary now lives in its own section above)
-      setChatMessages([
-        {
-          role: "assistant",
-          content:
-            "I've analyzed your dataset and prepared an **executive summary** above. Ask me anything — trends, specific numbers, comparisons, or what to do next.",
-        },
-      ]);
+      // ✅ Seed the chat intro only if the user hasn't started chatting yet
+      // (so refreshing the summary doesn't wipe an ongoing conversation).
+      setChatMessages((prev) =>
+        prev.length > 1
+          ? prev
+          : [
+              {
+                role: "assistant",
+                content:
+                  "I've analyzed your dataset and prepared an **executive summary** above. Ask me anything — trends, specific numbers, comparisons, or what to do next.",
+              },
+            ]
+      );
 
       return;
     }
@@ -356,10 +363,10 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
     setFilePath(returnedPath);
 
-    // Fresh upload → clear any prior filters, then analyze.
+    // Fresh upload → clear any prior filters, then analyze (with summary).
     setFilters({});
     setRanges({});
-    await runAnalysis(returnedPath, null);
+    await runAnalysis(returnedPath, null, true);
 
   } catch (err) {
     console.error(err);
@@ -368,19 +375,22 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
   setIsLoading(false);
 };
 
-// Re-usable analyze call: applies an optional filter spec and refreshes
-// charts, KPIs, filter options and the executive summary.
+// Re-usable analyze call. `withInsights` controls whether the executive
+// summary is regenerated (true on upload / explicit refresh; false on filter
+// changes, which only update charts + KPIs so they stay instant and free).
 const runAnalysis = async (
   path: string,
-  spec: { filters?: Record<string, string>; ranges?: Record<string, [number, number]> } | null
+  spec: { filters?: Record<string, string>; ranges?: Record<string, [number, number]> } | null,
+  withInsights: boolean
 ) => {
   try {
     const hasSpec =
       spec && ((spec.filters && Object.keys(spec.filters).length) ||
                (spec.ranges && Object.keys(spec.ranges).length));
     const q = hasSpec ? `&filters=${encodeURIComponent(JSON.stringify(spec))}` : "";
+    const insParam = withInsights ? "" : "&with_insights=false";
 
-    const res = await fetch(`${API_URL}/analyze?file_path=${path}${q}`);
+    const res = await fetch(`${API_URL}/analyze?file_path=${path}${q}${insParam}`);
     const analysis = await res.json();
 
     setDatasetStats(analysis.dataset_stats || null);
@@ -400,10 +410,32 @@ const runAnalysis = async (
       .filter(Boolean);
 
     setChartData(charts);
-    setDashboardInsights("Generating insights...");
-    setTimeout(() => pollInsights(path), 0);
+
+    if (withInsights) {
+      setSummaryStale(false);
+      setDashboardInsights("Generating insights...");
+      setTimeout(() => pollInsights(path), 0);
+    } else {
+      // Keep the existing summary but flag it as out of date for the new filter.
+      setSummaryStale(true);
+    }
   } catch (err) {
     console.error("Analysis failed:", err);
+  }
+};
+
+const refreshSummary = async () => {
+  if (!filePath || refreshingSummary) return;
+  setRefreshingSummary(true);
+  setSummaryStale(false);
+  setDashboardInsights("Generating insights...");
+  try {
+    await fetch(`${API_URL}/insights/refresh?file_path=${filePath}`);
+    pollInsights(filePath);
+  } catch (err) {
+    console.error("Summary refresh failed:", err);
+  } finally {
+    setRefreshingSummary(false);
   }
 };
 
@@ -415,7 +447,7 @@ const applyFilters = async (
   if (!filePath) return;
   setIsFiltering(true);
   try {
-    await runAnalysis(filePath, { filters: nextFilters, ranges: nextRanges });
+    await runAnalysis(filePath, { filters: nextFilters, ranges: nextRanges }, false);
   } finally {
     setIsFiltering(false);
   }
@@ -834,11 +866,28 @@ const handleChartClick = (chart: ChartData, event: any) => {
                   <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
                     <Sparkles size={18} />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <h2 className="text-xl font-bold text-slate-800">AI Executive Summary</h2>
                     <p className="text-sm text-slate-500">Key findings, risks, and recommended actions</p>
                   </div>
+                  {summaryReady && (
+                    <button
+                      onClick={refreshSummary}
+                      disabled={refreshingSummary}
+                      className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60 shrink-0"
+                      title="Regenerate the summary for the current filters"
+                    >
+                      {refreshingSummary ? <Loader2 className="animate-spin" size={14} /> : <Sparkles size={14} />}
+                      {refreshingSummary ? "Refreshing…" : "Refresh summary"}
+                    </button>
+                  )}
                 </div>
+
+                {summaryStale && (
+                  <div className="mb-4 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                    Filters changed — this summary reflects the previous selection. Click <strong>Refresh summary</strong> to update it.
+                  </div>
+                )}
                 {summaryReady ? (
                   <Markdown>{dashboardInsights as string}</Markdown>
                 ) : (

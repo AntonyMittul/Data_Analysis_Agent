@@ -37,7 +37,7 @@ def generate_insights_background(file_path, profile, charts):
 
 
 @router.get("/analyze")
-def analyze_dataset(file_path: str, filters: str = None):
+def analyze_dataset(file_path: str, filters: str = None, with_insights: bool = True):
     try:
         df_full, quality = load_dataset(file_path, return_quality=True)
 
@@ -90,18 +90,20 @@ def analyze_dataset(file_path: str, filters: str = None):
             "context": agent_context
         }
 
-        # 🔥 START INSIGHTS IN BACKGROUND (CRITICAL FIX)
-        threading.Thread(
-            target=generate_insights_background,
-            args=(file_path, profile, charts)
-        ).start()
+        # Regenerate the executive summary only when asked (initial analyze).
+        # Filter changes skip this to stay instant and avoid extra LLM calls.
+        if with_insights:
+            threading.Thread(
+                target=generate_insights_background,
+                args=(file_path, profile, charts)
+            ).start()
 
         return {
             "status": "success",
             "charts": charts,
             "dataset_stats": dataset_stats,
             "filter_options": filter_options,
-            "message": "Charts ready. Insights generating in background."
+            "message": "Charts ready."
         }
 
     except Exception as e:
@@ -143,6 +145,21 @@ def get_insights(file_path: str):
         "status": "error",
         "insights": "Failed to generate insights"
     }
+
+
+@router.get("/insights/refresh")
+def refresh_insights(file_path: str):
+    """Regenerate the executive summary for the currently analyzed (filtered) data."""
+    context = dataset_sessions.get(file_path)
+    if not context:
+        return {"status": "error", "message": "No analysis found. Re-upload the dataset."}
+
+    context["insights"] = None
+    threading.Thread(
+        target=generate_insights_background,
+        args=(file_path, context["profile"], context["charts"])
+    ).start()
+    return {"status": "started"}
 
 
 @router.get("/preview")
