@@ -1,15 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Ascending 3D bar chart — data analytics / business insight -->
-  <!-- Bar 1 (shortest) -->
-  <polygon points="40,300 150,300 180,270 70,270" fill="#F7CE83"/>
-  <polygon points="150,300 180,270 180,410 150,440" fill="#D9863B"/>
-  <rect x="40" y="300" width="110" height="140" fill="#EA9A4D"/>
-  <!-- Bar 2 (medium) -->
-  <polygon points="200,170 310,170 340,140 230,140" fill="#F7CE83"/>
-  <polygon points="310,170 340,140 340,410 310,440" fill="#D9863B"/>
-  <rect x="200" y="170" width="110" height="270" fill="#EA9A4D"/>
-  <!-- Bar 3 (tallest) -->
-  <polygon points="360,60 470,60 500,30 390,30" fill="#F7CE83"/>
-  <polygon points="470,60 500,30 500,410 470,440" fill="#D9863B"/>
-  <rect x="360" y="60" width="110" height="380" fill="#EA9A4D"/>
+  <!-- Data analytics + document intelligence: pie, bars, document, magnifier with check -->
+
+  <!-- Document (top-right) -->
+  <rect x="288" y="40" width="184" height="252" rx="12" fill="#ECEFF1"/>
+  <polygon points="446,40 472,66 446,66" fill="#CFD8DC"/>
+  <g fill="#90A4AE">
+    <rect x="318" y="86"  width="128" height="10" rx="5"/>
+    <rect x="318" y="120" width="128" height="10" rx="5"/>
+    <rect x="318" y="154" width="100" height="10" rx="5"/>
+    <rect x="318" y="188" width="128" height="10" rx="5"/>
+    <rect x="318" y="222" width="84"  height="10" rx="5"/>
+  </g>
+
+  <!-- Pie chart (top-left) -->
+  <circle cx="120" cy="118" r="74" fill="#27C4E8"/>
+  <path d="M120 118 L120 44 A74 74 0 0 1 192.9 131 Z" fill="#EF5340"/>
+  <path d="M120 118 L192.9 131 A74 74 0 0 1 83 181.7 Z" fill="#F9CE45"/>
+
+  <!-- Bar chart (bottom-left) -->
+  <rect x="34" y="356" width="40" height="104" rx="5" fill="#F9CE45"/>
+  <rect x="86" y="300" width="40" height="160" rx="5" fill="#45C99A"/>
+  <rect x="138" y="330" width="40" height="130" rx="5" fill="#29A9E8"/>
+  <rect x="190" y="372" width="40" height="88" rx="5" fill="#EF5340"/>
+  <rect x="22" y="458" width="220" height="18" rx="9" fill="#B0BEC5"/>
+
+  <!-- Magnifying glass with checkmark (center) -->
+  <line x1="352" y1="348" x2="412" y2="408" stroke="#546E7A" stroke-width="30" stroke-linecap="round"/>
+  <circle cx="300" cy="296" r="82" fill="#CDEEF7" stroke="#607D8B" stroke-width="22"/>
+  <path d="M262 298 L289 326 L343 268" fill="none" stroke="#5E9CAD" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
