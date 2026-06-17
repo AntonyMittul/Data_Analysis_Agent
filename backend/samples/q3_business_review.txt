@@ -1,0 +1,26 @@
+QUARTERLY BUSINESS REVIEW — Q3 2024
+
+EXECUTIVE OVERVIEW
+Q3 revenue reached $4.2M, up 18% quarter-over-quarter and 31% year-over-year. Net profit margin improved to 22% from 19% in Q2, driven by lower customer acquisition cost and higher retention.
+
+REVENUE BREAKDOWN
+- Subscription revenue: $3.1M (74% of total), growing 21% QoQ.
+- Professional services: $0.8M, flat versus Q2.
+- One-time licenses: $0.3M, down 9%.
+
+CUSTOMER METRICS
+Net revenue retention rose to 112%. Monthly churn fell to 1.8% from 2.4%. The enterprise segment now contributes 56% of revenue, up from 48%.
+
+REGIONAL PERFORMANCE
+North America led with $2.5M (60%), followed by Europe at $1.2M (28%) and APAC at $0.5M (12%). APAC grew fastest at 40% QoQ off a small base.
+
+RISKS & CONCERNS
+- Revenue concentration: the top 10 accounts represent 38% of revenue.
+- Rising cloud infrastructure costs reduced gross margin by 2 points.
+- Two enterprise renewals worth $0.6M are at risk in Q4.
+
+RECOMMENDATIONS
+1. Diversify the customer base to reduce concentration risk.
+2. Negotiate committed-use cloud discounts to protect margins.
+3. Launch a dedicated renewal task force for at-risk enterprise accounts.
+4. Increase APAC investment given strong growth momentum.

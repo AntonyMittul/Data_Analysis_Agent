@@ -4,6 +4,7 @@ from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 import uuid
 import os
+import shutil
 
 from app.rag.pipeline import rag_pipeline_stream
 from app.rag.ingestion import process_document
@@ -108,6 +109,40 @@ async def query_document(request: QueryRequest):
     )
 
     return StreamingResponse(generator, media_type="text/plain")
+
+
+# ================= SAMPLE DOCUMENTS =================
+
+SAMPLE_DOCS = {"company_policy.txt", "q3_business_review.txt"}
+
+
+class SampleRequest(BaseModel):
+    name: str
+
+
+@router.post("/use-sample")
+async def use_sample_document(req: SampleRequest):
+    if req.name not in SAMPLE_DOCS:
+        return {"error": "Unknown sample document."}
+
+    src = os.path.join("samples", req.name)
+    if not os.path.exists(src):
+        return {"error": "Sample document not found on the server."}
+
+    # Copy into uploads/ so the in-app viewer can render it, then index.
+    dest = os.path.join(UPLOAD_DIR, req.name)
+    try:
+        shutil.copyfile(src, dest)
+    except Exception as e:
+        print(f"[SAMPLE COPY ERROR]: {e}")
+        return {"error": "Could not load the sample document."}
+
+    doc_id = str(uuid.uuid4())
+    ok = await run_in_threadpool(index_document, dest, doc_id)
+    if not ok:
+        return {"error": "Could not index the sample document."}
+
+    return {"doc_id": doc_id, "file_name": req.name, "status": "ready"}
 
 
 # ================= CHAT SESSIONS (sidebar) =================

@@ -48,6 +48,120 @@ const QUICK_ACTIONS = [
   { label: "Technical Summary", prompt: "Provide a technical summary of this document, covering key methods, specifications, figures, or technical details." },
 ];
 
+const SAMPLE_DOCS = [
+  { name: "q3_business_review.txt", label: "Q3 Business Review", desc: "Revenue, growth & risks — ask for a summary or insights" },
+  { name: "company_policy.txt", label: "Company Policy", desc: "HR, leave & expense rules — ask about limits and approvals" },
+];
+
+const USE_CASES = [
+  { icon: "💼", title: "Financial reports", desc: "Summaries, KPIs, risks" },
+  { icon: "📋", title: "Policies & contracts", desc: "Rules, clauses, obligations" },
+  { icon: "📑", title: "Research & reports", desc: "Findings, methods, conclusions" },
+  { icon: "📊", title: "Spreadsheets & data", desc: "Trends, totals, comparisons" },
+];
+
+const EXAMPLE_QUESTIONS = [
+  "Summarize this document in 5 bullet points",
+  "What are the key risks?",
+  "List the main recommendations",
+  "What are the most important numbers?",
+];
+
+function ProcessingState() {
+  return (
+    <div className="max-w-2xl mx-auto py-10">
+      <div className="flex items-center gap-3 mb-6">
+        <Loader2 className="animate-spin text-violet-600" size={20} />
+        <p className="font-medium text-slate-700">Reading &amp; indexing your document…</p>
+      </div>
+      <div className="space-y-3 animate-pulse">
+        <div className="h-3 bg-slate-200 rounded w-2/3" />
+        <div className="h-3 bg-slate-200 rounded w-full" />
+        <div className="h-3 bg-slate-200 rounded w-5/6" />
+        <div className="h-24 bg-slate-100 rounded-xl mt-4" />
+        <div className="h-24 bg-slate-100 rounded-xl" />
+      </div>
+    </div>
+  );
+}
+
+function DocEmptyState({
+  onUseSample,
+  onExample,
+  onUpload,
+}: {
+  onUseSample: (name: string, label: string) => void;
+  onExample: (q: string) => void;
+  onUpload: () => void;
+}) {
+  return (
+    <div className="max-w-3xl mx-auto py-4">
+      <div className="text-center">
+        <div className="w-16 h-16 rounded-2xl bg-violet-100 text-violet-600 flex items-center justify-center mx-auto mb-4">
+          <FileText size={28} />
+        </div>
+        <h2 className="text-2xl font-bold text-slate-800">Chat with your documents</h2>
+        <p className="text-slate-500 mt-2 max-w-md mx-auto">
+          Upload a PDF, Word, Excel, CSV or text file and ask questions — answers come
+          with cited sources. I can also help with general business, finance and sales topics.
+        </p>
+        <button
+          onClick={onUpload}
+          className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+        >
+          <Plus size={16} /> Upload a document
+        </button>
+      </div>
+
+      <div className="mt-10">
+        <p className="text-xs uppercase tracking-wider text-slate-400 mb-3">Or try a sample document</p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          {SAMPLE_DOCS.map((s) => (
+            <button
+              key={s.name}
+              onClick={() => onUseSample(s.name, s.label)}
+              className="text-left p-4 rounded-xl border border-slate-200 bg-white hover:border-violet-400 hover:shadow-sm transition-all"
+            >
+              <div className="flex items-center gap-2 font-semibold text-slate-800">
+                <FileText size={16} className="text-violet-600" /> {s.label}
+              </div>
+              <p className="text-xs text-slate-500 mt-1">{s.desc}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-8">
+        <p className="text-xs uppercase tracking-wider text-slate-400 mb-3">What you can do</p>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {USE_CASES.map((u) => (
+            <div key={u.title} className="p-4 rounded-xl border border-slate-200 bg-white">
+              <div className="text-2xl mb-1">{u.icon}</div>
+              <p className="font-semibold text-slate-800 text-sm">{u.title}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{u.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-8">
+        <p className="text-xs uppercase tracking-wider text-slate-400 mb-3">Example questions</p>
+        <div className="flex flex-wrap gap-2">
+          {EXAMPLE_QUESTIONS.map((q) => (
+            <button
+              key={q}
+              onClick={() => onExample(q)}
+              className="text-sm px-3 py-1.5 rounded-full border border-slate-200 text-slate-600 hover:bg-violet-50 hover:border-violet-300 transition-colors"
+            >
+              {q}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function DocumentExtraction() {
   const [messages, setMessages] = useState<Message[]>([GREETING]);
 
@@ -173,6 +287,37 @@ export function DocumentExtraction() {
       cancelled = true;
     };
   }, [uploadedFile, showPdf]);
+
+  // ================= SAMPLE DOCUMENT =================
+  const useSample = async (name: string, label: string) => {
+    setIsProcessing(true);
+    try {
+      const res = await fetch(`${API}/documents/use-sample`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setMessages((prev) => [...prev, { role: "assistant", content: `⚠️ ${data.error}` }]);
+        return;
+      }
+      setUploadedFile({ name: data.file_name || name });
+      setDocId(data.doc_id);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `"${label}" loaded and indexed. Ask anything, use a quick action, or click a cited source to jump into the document.`,
+          hasDocument: true,
+        },
+      ]);
+    } catch {
+      setMessages((prev) => [...prev, { role: "assistant", content: "⚠️ Could not load the sample document." }]);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   // ================= FILE UPLOAD =================
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -405,7 +550,16 @@ export function DocumentExtraction() {
         {/* CHAT */}
         <main className="flex-1 overflow-y-auto px-6 py-8 transition-all">
           <div className="max-w-4xl mx-auto space-y-6">
-            {messages.map((message, idx) => (
+            {isProcessing ? (
+              <ProcessingState />
+            ) : !uploadedFile && messages.length <= 1 ? (
+              <DocEmptyState
+                onUseSample={useSample}
+                onExample={(q) => setInput(q)}
+                onUpload={() => fileInputRef.current?.click()}
+              />
+            ) : (
+            messages.map((message, idx) => (
               <div
                 key={idx}
                 className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
@@ -468,7 +622,8 @@ export function DocumentExtraction() {
                   )}
                 </div>
               </div>
-            ))}
+            ))
+            )}
             <div ref={messagesEndRef} />
           </div>
         </main>
