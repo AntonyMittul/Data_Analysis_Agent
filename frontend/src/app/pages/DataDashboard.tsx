@@ -96,6 +96,16 @@ const SUGGESTED_QUESTIONS = [
   "Summarize performance in one line",
 ];
 
+const SAMPLE_DATASETS = [
+  { name: "Retail Sales", path: "samples/retail_sales.csv", desc: "Revenue, units & profit by region and product category" },
+  { name: "Marketing Campaigns", path: "samples/marketing_campaigns.csv", desc: "Spend, conversions & ROI across channels" },
+];
+
+const formatSize = (kb?: number) => {
+  if (!kb && kb !== 0) return "—";
+  return kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${kb} KB`;
+};
+
 const renderMessageContent = (content: string) => {
   if (!content) return null;
   return <Markdown>{content}</Markdown>;
@@ -193,8 +203,10 @@ const ChartCard = ({ title, children, onClick }: any) => (
 
 export function DataDashboard() {
 
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | { name: string } | null>(null);
   const [filePath, setFilePath] = useState<string>("");
+  const [uploadedAt, setUploadedAt] = useState<string>("");
+  const [lastAnalyzedAt, setLastAnalyzedAt] = useState<string>("");
 
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -345,6 +357,7 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
   if (!file) return;
 
   setUploadedFile(file);
+  setUploadedAt(new Date().toLocaleString());
   setIsLoading(true);
 
   try {
@@ -410,6 +423,7 @@ const runAnalysis = async (
       .filter(Boolean);
 
     setChartData(charts);
+    setLastAnalyzedAt(new Date().toLocaleString());
 
     if (withInsights) {
       setSummaryStale(false);
@@ -421,6 +435,21 @@ const runAnalysis = async (
     }
   } catch (err) {
     console.error("Analysis failed:", err);
+  }
+};
+
+// Load one of the bundled sample datasets straight from the server (no upload).
+const analyzeSample = async (path: string, name: string) => {
+  setUploadedFile({ name });
+  setFilePath(path);
+  setUploadedAt(new Date().toLocaleString());
+  setFilters({});
+  setRanges({});
+  setIsLoading(true);
+  try {
+    await runAnalysis(path, null, true);
+  } finally {
+    setIsLoading(false);
   }
 };
 
@@ -709,24 +738,24 @@ const handleChartClick = (chart: ChartData, event: any) => {
                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                   >
                     <Upload className="w-4 h-4"/>
-                    Upload Data
+                    Analyze Dataset
                   </button>
 
                   <button
                     onClick={fetchPreviewData}
-                    className="bg-gray-200 px-4 py-2 rounded-lg"
+                    className="bg-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
                   >
-                    View Data
+                    Explore Data
                   </button>
 
                   <button
                     onClick={handleDownloadPdf}
                     disabled={isExporting}
                     className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-60"
-                    title="Download all visuals as a PDF report"
+                    title="Generate a presentation-ready executive report (PDF)"
                   >
                     {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                    {isExporting ? "Preparing…" : "Download PDF"}
+                    {isExporting ? "Generating…" : "Generate Executive Report"}
                   </button>
                 </>
               )}
@@ -750,20 +779,33 @@ const handleChartClick = (chart: ChartData, event: any) => {
 
           {!uploadedFile && !isLoading && (
 
-            <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center min-h-[75vh]">
 
-              <div className="text-center">
+              <div className="text-center max-w-2xl">
 
-                <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Upload className="w-12 h-12 text-slate-400"/>
-                </div>
+                {/* Illustration */}
+                <svg viewBox="0 0 200 130" className="w-44 h-28 mx-auto mb-6" fill="none">
+                  <defs>
+                    <linearGradient id="empty-grad" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" />
+                      <stop offset="100%" stopColor="#6366f1" />
+                    </linearGradient>
+                  </defs>
+                  <rect x="20" y="70" width="22" height="40" rx="4" fill="url(#empty-grad)" opacity="0.85" />
+                  <rect x="52" y="50" width="22" height="60" rx="4" fill="url(#empty-grad)" opacity="0.65" />
+                  <rect x="84" y="30" width="22" height="80" rx="4" fill="url(#empty-grad)" />
+                  <rect x="116" y="58" width="22" height="52" rx="4" fill="url(#empty-grad)" opacity="0.65" />
+                  <rect x="148" y="44" width="22" height="66" rx="4" fill="url(#empty-grad)" opacity="0.85" />
+                  <path d="M28 64 L63 46 L95 26 L127 52 L159 38" stroke="#9333ea" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle cx="159" cy="38" r="5" fill="#9333ea" />
+                </svg>
 
                 <h2 className="text-2xl font-bold text-slate-800">
                   Turn your data into decisions
                 </h2>
 
-                <p className="text-slate-500 mb-6 max-w-md mx-auto">
-                  Upload a CSV or Excel file and your AI analyst will profile it,
+                <p className="text-slate-500 mt-2 mb-6 max-w-md mx-auto">
+                  Upload a CSV to begin analysis — your AI analyst will profile it,
                   surface key trends, and build an interactive executive dashboard in seconds.
                 </p>
 
@@ -772,8 +814,29 @@ const handleChartClick = (chart: ChartData, event: any) => {
                   className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   <Upload className="w-4 h-4" />
-                  Upload Dataset
+                  Analyze Dataset
                 </button>
+
+                {/* Sample datasets */}
+                <div className="mt-10">
+                  <p className="text-xs uppercase tracking-wider text-slate-400 mb-3">
+                    Or try a sample dataset
+                  </p>
+                  <div className="grid sm:grid-cols-2 gap-3 max-w-xl mx-auto">
+                    {SAMPLE_DATASETS.map((s) => (
+                      <button
+                        key={s.path}
+                        onClick={() => analyzeSample(s.path, s.name)}
+                        className="text-left p-4 rounded-xl border border-slate-200 bg-white hover:border-blue-400 hover:shadow-sm transition-all"
+                      >
+                        <div className="flex items-center gap-2 font-semibold text-slate-800">
+                          <BarChart2 size={16} className="text-blue-600" /> {s.name}
+                        </div>
+                        <p className="text-xs text-slate-500 mt-1">{s.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
               </div>
 
@@ -791,6 +854,34 @@ const handleChartClick = (chart: ChartData, event: any) => {
 
           {chartData.length > 0 && (
             <div className="space-y-6 animate-in fade-in duration-500 w-full">
+
+              {/* Dataset metadata */}
+              {datasetStats && (
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Database size={16} className="text-blue-600" />
+                    <h3 className="font-semibold text-slate-800">Dataset</h3>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4 text-sm">
+                    {[
+                      { label: "Name", value: datasetStats.file_name },
+                      { label: "Rows", value: Number(datasetStats.rows || 0).toLocaleString() },
+                      { label: "Columns", value: datasetStats.columns },
+                      { label: "Size", value: formatSize(datasetStats.size_kb) },
+                      { label: "Missing Values", value: Number(datasetStats.missing_values || 0).toLocaleString() },
+                      { label: "Uploaded", value: uploadedAt || "—" },
+                      { label: "Last Analyzed", value: lastAnalyzedAt || "—" },
+                    ].map((m) => (
+                      <div key={m.label} className="min-w-0">
+                        <p className="text-xs text-slate-400">{m.label}</p>
+                        <p className="font-semibold text-slate-800 truncate" title={String(m.value)}>
+                          {m.value}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Global Filters */}
               {filterOptions &&

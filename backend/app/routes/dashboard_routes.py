@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from concurrent.futures import ThreadPoolExecutor
 import threading
 import json
+import os
 
 from app.services.dataset_loader import load_dataset
 from app.services.data_profiler import profile_dataset
@@ -55,12 +56,18 @@ def analyze_dataset(file_path: str, filters: str = None, with_insights: bool = T
         if len(df) == 0:  # filters excluded everything — fall back to full data
             df = df_full
 
+        try:
+            size_kb = round(os.path.getsize(file_path) / 1024, 1)
+        except OSError:
+            size_kb = 0
+
         dataset_stats = {
             "file_name": file_path.replace("\\", "/").split("/")[-1],
             "rows": len(df),
             "columns": len(df.columns),
             "missing_values": quality.get("missing_cells", 0),
             "duplicate_rows": quality.get("duplicate_rows", 0),
+            "size_kb": size_kb,
             "cards": build_kpi_cards(df, quality),
         }
 
