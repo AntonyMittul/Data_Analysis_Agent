@@ -3,6 +3,37 @@ from app.rag.generator import generate_answer_stream
 from app.rag.vector_store import get_db
 from app.memory.chat_memory import create_session, add_message, set_title, get_history, get_sessions, session_exists, set_doc_id
 import uuid
+import json
+import re
+
+# Marker appended to the stream to carry structured source citations.
+CITATIONS_MARKER = "__CITATIONS__"
+
+
+def _build_citations(docs):
+    """Turn the retrieved chunks into displayable source citations."""
+    citations = []
+    for d in docs:
+        content = (d.page_content or "").strip()
+        page = d.metadata.get("page")
+        page_num = int(page) + 1 if isinstance(page, (int, float)) else None  # PDFs are 0-indexed
+
+        first_line = content.split("\n", 1)[0].strip()
+        heading = first_line if 0 < len(first_line) <= 80 else None
+
+        refs = sorted(set(re.findall(r"(?:Table|Figure|Fig\.?)\s*\d+", content)))
+
+        excerpt = content[:200].strip()
+        if len(content) > 200:
+            excerpt += "…"
+
+        citations.append({
+            "page": page_num,
+            "heading": heading,
+            "refs": refs,
+            "excerpt": excerpt,
+        })
+    return citations
 
 # ================= HELPERS =================
 
@@ -90,6 +121,7 @@ async def rag_pipeline_stream(doc_id, question, session_id=None, file_name=None)
 
     # ---- RETRIEVE DOCUMENT CONTEXT (may be empty) ----
     context = ""
+    citations = []
     if has_document:
         retriever = get_retriever(doc_id)
         if retriever:
@@ -116,6 +148,7 @@ async def rag_pipeline_stream(doc_id, question, session_id=None, file_name=None)
                 f"Page {d.metadata.get('page', 'N/A')}:\n\n{d.page_content.strip()}"
                 for d in selected
             )
+            citations = _build_citations(selected)
 
     # ---- STREAM ANSWER (document-first, expert fallback when context is empty) ----
     full_response = ""
@@ -123,6 +156,10 @@ async def rag_pipeline_stream(doc_id, question, session_id=None, file_name=None)
         full_response += chunk
         yield chunk
     add_message(session_id, "assistant", full_response)
+
+    # Append structured source citations (only when the document was actually used).
+    if citations and context.strip():
+        yield "\n" + CITATIONS_MARKER + json.dumps(citations)
 
 # ================= API ENDPOINTS =================
 

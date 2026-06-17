@@ -15,11 +15,21 @@ import {
 import Markdown from "../components/Markdown";
 import { ThemeToggle } from "../components/ThemeProvider";
 
+interface Citation {
+  page: number | null;
+  heading?: string | null;
+  refs?: string[];
+  excerpt: string;
+}
+
 interface Message {
   role: "user" | "assistant";
   content: string;
   hasDocument?: boolean;
+  citations?: Citation[];
 }
+
+const CITATIONS_MARKER = "__CITATIONS__";
 
 const GREETING: Message = {
   role: "assistant",
@@ -55,6 +65,13 @@ export function DocumentExtraction() {
 
   // 🔥 NEW STATE (already present but now used properly)
   const [showPdf, setShowPdf] = useState(false);
+  const [pdfPage, setPdfPage] = useState<number | null>(null);
+
+  // Jump the document viewer to a cited page.
+  const jumpToCitation = (c: Citation) => {
+    setShowPdf(true);
+    if (c.page) setPdfPage(c.page);
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -240,33 +257,35 @@ export function DocumentExtraction() {
       const decoder = new TextDecoder();
       let accumulatedText = "";
 
+      // Split the human-readable answer from the trailing citations payload.
+      const applyChunk = (text: string) => {
+        const idx = text.indexOf(CITATIONS_MARKER);
+        const content = idx >= 0 ? text.slice(0, idx) : text;
+        let citations: Citation[] | undefined;
+        if (idx >= 0) {
+          try {
+            citations = JSON.parse(text.slice(idx + CITATIONS_MARKER.length));
+          } catch {
+            citations = undefined;
+          }
+        }
+        setMessages(prev => {
+          const m = [...prev];
+          const i = m.length - 1;
+          m[i] = { ...m[i], content: content.trimEnd(), ...(citations ? { citations } : {}) };
+          return m;
+        });
+      };
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        accumulatedText += chunk;
-
-        setMessages(prev => {
-          const newMessages = [...prev];
-          const lastIndex = newMessages.length - 1;
-          newMessages[lastIndex] = {
-            ...newMessages[lastIndex],
-            content: accumulatedText
-          };
-          return newMessages;
-        });
+        accumulatedText += decoder.decode(value, { stream: true });
+        applyChunk(accumulatedText);
       }
 
-      const finalChunk = decoder.decode();
-      if (finalChunk) {
-        accumulatedText += finalChunk;
-        setMessages(prev => {
-          const newMessages = [...prev];
-          newMessages[newMessages.length - 1].content = accumulatedText;
-          return newMessages;
-        });
-      }
+      accumulatedText += decoder.decode();
+      applyChunk(accumulatedText);
 
     } catch (err) {
       console.error("Stream Error:", err);
@@ -417,6 +436,36 @@ export function DocumentExtraction() {
                       <Markdown>{message.content}</Markdown>
                     )}
                   </div>
+
+                  {/* Source citations */}
+                  {message.role === "assistant" && message.citations && message.citations.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-slate-200">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+                        Sources
+                      </p>
+                      <div className="space-y-2">
+                        {message.citations.map((c, ci) => (
+                          <button
+                            key={ci}
+                            onClick={() => jumpToCitation(c)}
+                            className="block w-full text-left rounded-lg border border-slate-200 bg-slate-50 hover:bg-violet-50 hover:border-violet-300 transition-colors p-2"
+                            title={c.page ? `Jump to page ${c.page}` : "Open document"}
+                          >
+                            <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-violet-700">
+                              {c.page && (
+                                <span className="px-2 py-0.5 rounded-full bg-violet-100">Page {c.page}</span>
+                              )}
+                              {c.heading && <span className="text-slate-600 truncate max-w-[220px]">{c.heading}</span>}
+                              {c.refs && c.refs.map((r) => (
+                                <span key={r} className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">{r}</span>
+                              ))}
+                            </div>
+                            <p className="text-xs text-slate-500 mt-1 line-clamp-2">{c.excerpt}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -429,7 +478,10 @@ export function DocumentExtraction() {
           <div className="w-1/2 border-l border-slate-200 bg-white overflow-hidden">
             {/\.(pdf|txt)$/i.test(uploadedFile.name) ? (
               <iframe
-                src={`${API}/uploads/${encodeURIComponent(uploadedFile.name)}`}
+                key={`${uploadedFile.name}-${pdfPage ?? 1}`}
+                src={`${API}/uploads/${encodeURIComponent(uploadedFile.name)}${
+                  /\.pdf$/i.test(uploadedFile.name) && pdfPage ? `#page=${pdfPage}` : ""
+                }`}
                 title="Document Viewer"
                 className="w-full h-full"
               />
