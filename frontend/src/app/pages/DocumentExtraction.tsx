@@ -113,6 +113,39 @@ export function DocumentExtraction() {
     (s.title || "").toLowerCase().includes(chatSearch.toLowerCase())
   );
 
+  // ================= DATA PREVIEW (CSV / Excel reference panel) =================
+  const [previewCols, setPreviewCols] = useState<string[]>([]);
+  const [previewRows, setPreviewRows] = useState<any[]>([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const isTabular = (name?: string) => !!name && /\.(csv|xlsx|xls)$/i.test(name);
+
+  useEffect(() => {
+    const name = uploadedFile?.name;
+    if (!showPdf || !isTabular(name)) return;
+    let cancelled = false;
+    (async () => {
+      setPreviewLoading(true);
+      try {
+        const res = await fetch(`${API}/preview?file_path=${encodeURIComponent("uploads/" + name)}`);
+        const data = await res.json();
+        if (cancelled) return;
+        setPreviewCols(data.columns || []);
+        setPreviewRows(data.rows || []);
+      } catch (err) {
+        if (!cancelled) {
+          setPreviewCols([]);
+          setPreviewRows([]);
+        }
+      } finally {
+        if (!cancelled) setPreviewLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [uploadedFile, showPdf]);
+
   // ================= FILE UPLOAD =================
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -377,15 +410,61 @@ export function DocumentExtraction() {
           </div>
         </main>
 
-        {/* 🔥 DOCUMENT VIEWER (inline for PDF/TXT, fallback for others) */}
+        {/* 🔥 DOCUMENT VIEWER (PDF/TXT inline, data table for CSV/Excel, fallback otherwise) */}
         {showPdf && uploadedFile && (
-          <div className="w-1/2 border-l border-slate-200 bg-white">
+          <div className="w-1/2 border-l border-slate-200 bg-white overflow-hidden">
             {/\.(pdf|txt)$/i.test(uploadedFile.name) ? (
               <iframe
                 src={`${API}/uploads/${encodeURIComponent(uploadedFile.name)}`}
                 title="Document Viewer"
                 className="w-full h-full"
               />
+            ) : isTabular(uploadedFile.name) ? (
+              <div className="h-full flex flex-col">
+                <div className="px-4 py-3 border-b border-slate-200 flex items-center gap-2">
+                  <FileText size={16} className="text-violet-600 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 truncate">{uploadedFile.name}</p>
+                    <p className="text-xs text-slate-400">
+                      Showing first {previewRows.length} rows · {previewCols.length} columns
+                    </p>
+                  </div>
+                </div>
+                <div className="flex-1 overflow-auto">
+                  {previewLoading ? (
+                    <div className="flex items-center justify-center h-full text-slate-400 gap-2">
+                      <Loader2 className="animate-spin" size={18} /> Loading data…
+                    </div>
+                  ) : previewRows.length === 0 ? (
+                    <div className="flex items-center justify-center h-full text-slate-400 text-sm">
+                      No data to preview.
+                    </div>
+                  ) : (
+                    <table className="min-w-full text-sm">
+                      <thead className="bg-slate-100 sticky top-0">
+                        <tr>
+                          {previewCols.map((c, i) => (
+                            <th key={i} className="p-2 border-b border-slate-200 text-left font-semibold whitespace-nowrap">
+                              {c}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {previewRows.map((row, i) => (
+                          <tr key={i} className={i % 2 ? "bg-slate-50" : "bg-white"}>
+                            {previewCols.map((c, j) => (
+                              <td key={j} className="p-2 border-b border-slate-100 whitespace-nowrap">
+                                {row[c] === null || row[c] === undefined ? "" : String(row[c])}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full p-8 text-center text-slate-500">
                 <FileText size={48} className="mb-4 text-violet-400" />
