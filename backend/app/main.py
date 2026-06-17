@@ -9,7 +9,7 @@ from app.routes.data_chat_routes import router as data_chat_router
 
 
 
-app = FastAPI(title="Agentic Business Insight Agent")
+app = FastAPI(title="DataSense AI")
 
 
 app.add_middleware(

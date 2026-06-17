@@ -11,7 +11,7 @@ export function Home() {
       <div className="relative z-10 max-w-4xl w-full">
         <div className="text-center mb-12">
           <h1 className="text-5xl mb-4 bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
-            AGENTIC BUSINESS INSIGHT AGENT
+DataSense AI
           </h1>
           <p className="text-slate-600 text-lg">
             AI-powered data analytics and document intelligence
