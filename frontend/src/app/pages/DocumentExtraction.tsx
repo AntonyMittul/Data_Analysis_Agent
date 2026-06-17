@@ -10,7 +10,11 @@ import {
   Plus,
   Search,
   MessageSquare,
-  Trash2
+  Trash2,
+  BarChart3,
+  ScrollText,
+  FileSearch,
+  FileSpreadsheet
 } from "lucide-react";
 import Markdown from "../components/Markdown";
 import { ThemeToggle } from "../components/ThemeProvider";
@@ -55,10 +59,10 @@ const SAMPLE_DOCS = [
 ];
 
 const USE_CASES = [
-  { icon: "💼", title: "Financial reports", desc: "Summaries, KPIs, risks" },
-  { icon: "📋", title: "Policies & contracts", desc: "Rules, clauses, obligations" },
-  { icon: "📑", title: "Research & reports", desc: "Findings, methods, conclusions" },
-  { icon: "📊", title: "Spreadsheets & data", desc: "Trends, totals, comparisons" },
+  { Icon: BarChart3, title: "Financial reports", desc: "Summaries, KPIs, risks" },
+  { Icon: ScrollText, title: "Policies & contracts", desc: "Rules, clauses, obligations" },
+  { Icon: FileSearch, title: "Research & reports", desc: "Findings, methods, conclusions" },
+  { Icon: FileSpreadsheet, title: "Spreadsheets & data", desc: "Trends, totals, comparisons" },
 ];
 
 const EXAMPLE_QUESTIONS = [
@@ -137,7 +141,7 @@ function DocEmptyState({
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {USE_CASES.map((u) => (
             <div key={u.title} className="p-4 rounded-xl border border-slate-200 bg-white">
-              <div className="text-2xl mb-1">{u.icon}</div>
+              <u.Icon className="w-6 h-6 text-violet-600 mb-2" />
               <p className="font-semibold text-slate-800 text-sm">{u.title}</p>
               <p className="text-xs text-slate-500 mt-0.5">{u.desc}</p>
             </div>
@@ -178,7 +182,7 @@ export function DocumentExtraction() {
   const [sessions, setSessions] = useState<any[]>([]);
   const [chatSearch, setChatSearch] = useState("");
 
-  // 🔥 NEW STATE (already present but now used properly)
+  // Document viewer panel state
   const [showPdf, setShowPdf] = useState(false);
   const [pdfPage, setPdfPage] = useState<number | null>(null);
 
@@ -475,7 +479,7 @@ export function DocumentExtraction() {
           {uploadedFile && (
             <div
               className="flex items-center gap-2 text-sm font-medium text-violet-600 bg-violet-50 px-3 py-1 rounded-full cursor-pointer hover:bg-violet-100 transition"
-              onClick={() => setShowPdf(prev => !prev)} // 🔥 CLICK TO TOGGLE PDF
+              onClick={() => setShowPdf(prev => !prev)} // toggle the document viewer
             >
               <FileText size={16} />
               {uploadedFile.name}
@@ -485,7 +489,7 @@ export function DocumentExtraction() {
         </div>
       </header>
 
-      {/* 🔥 SPLIT VIEW */}
+      {/* SPLIT VIEW */}
       <div className="flex flex-1 overflow-hidden">
 
         {/* CHAT SIDEBAR */}
@@ -629,7 +633,7 @@ export function DocumentExtraction() {
           </div>
         </main>
 
-        {/* 🔥 DOCUMENT VIEWER (PDF/TXT inline, data table for CSV/Excel, fallback otherwise) */}
+        {/* DOCUMENT VIEWER (PDF/TXT inline, data table for CSV/Excel, fallback otherwise) */}
         {showPdf && uploadedFile && (
           <div className="w-1/2 border-l border-slate-200 bg-white overflow-hidden">
             {/\.(pdf|txt)$/i.test(uploadedFile.name) ? (

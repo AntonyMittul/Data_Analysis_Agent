@@ -16,7 +16,7 @@ from app.services.insight_generator import generate_insights
 
 router = APIRouter()
 
-# ✅ store dataset sessions
+# In-memory cache of analyzed datasets, keyed by file path.
 dataset_sessions = {}
 
 
@@ -34,7 +34,7 @@ def generate_insights_background(file_path, profile, charts):
         print(f"[INSIGHTS STORED] {file_path}")
 
     except Exception as e:
-        print("[❌ INSIGHT ERROR]:", str(e))
+        print("[INSIGHT ERROR]:", str(e))
 
 
 @router.get("/analyze")
@@ -71,7 +71,7 @@ def analyze_dataset(file_path: str, filters: str = None, with_insights: bool = T
             "cards": build_kpi_cards(df, quality),
         }
 
-        # ✅ parallel execution (FAST)
+        # Generate charts and profile the data in parallel.
         with ThreadPoolExecutor() as executor:
             future_charts = executor.submit(generate_visualizations, df)
             future_profile = executor.submit(profile_dataset, df)
@@ -79,7 +79,7 @@ def analyze_dataset(file_path: str, filters: str = None, with_insights: bool = T
             charts = future_charts.result()
             profile = future_profile.result()
 
-        # Build agent context using StructuredDataAgent (CRITICAL FIX)
+        # Build the structured-data context the data-chat agent will use.
         from app.agents.structured_agent import StructuredDataAgent
         agent = StructuredDataAgent()
         structure_info = {
@@ -89,7 +89,7 @@ def analyze_dataset(file_path: str, filters: str = None, with_insights: bool = T
         }
         agent_context = agent.build_context(df, structure_info)
 
-        # ✅ store context FIRST
+        # Store the session context before starting background insight generation.
         dataset_sessions[file_path] = {
             "profile": profile,
             "charts": charts,
@@ -135,7 +135,7 @@ def get_insights(file_path: str):
 
     insights = context.get("insights")
 
-    # 🔥 FIX: Explicit handling
+    # Distinguish "still generating" from a ready or failed summary.
     if insights is None:
         return {
             "status": "processing",

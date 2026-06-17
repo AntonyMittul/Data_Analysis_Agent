@@ -57,7 +57,7 @@ def get_column_metadata(df):
         dtype = str(col_data.dtype)
         unique_count = col_data.nunique()
 
-        # 🔹 TYPE DETECTION
+        # TYPE DETECTION
         if "int" in dtype or "float" in dtype:
             col_type = "numeric"
         elif "datetime" in dtype:
@@ -65,7 +65,7 @@ def get_column_metadata(df):
         else:
             col_type = "categorical"
 
-        # 🔹 CARDINALITY
+        # CARDINALITY
         if unique_count < 10:
             cardinality = "low"
         elif unique_count < 50:

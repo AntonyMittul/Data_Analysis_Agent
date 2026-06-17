@@ -44,7 +44,7 @@ interface ChartData {
   };
 }
 
-// ================= FIX: BACKEND → PLOTLY =================
+// ================= BACKEND CHART → PLOTLY =================
 const transformToPlotly = (chart: any) => {
   try {
     if (!chart?.data) return null;
@@ -320,10 +320,10 @@ const pollInsights = async (path: string) => {
       !insights.toLowerCase().includes("generating")
     ) {
 
-      // ✅ SET INSIGHTS
+      // SET INSIGHTS
       setDashboardInsights(insights);
 
-      // ✅ Seed the chat intro only if the user hasn't started chatting yet
+      // Seed the chat intro only if the user hasn't started chatting yet
       // (so refreshing the summary doesn't wipe an ongoing conversation).
       setChatMessages((prev) =>
         prev.length > 1
@@ -340,7 +340,7 @@ const pollInsights = async (path: string) => {
       return;
     }
 
-    // 🔥 FAST POLLING (KEY FIX)
+    // Poll until the insights are ready.
     await new Promise(res => setTimeout(res, 1000)); // 1 second constant
   }
 
@@ -366,7 +366,7 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const formData = new FormData();
     formData.append("file", file);
 
-    // 1️⃣ Upload
+    // 1. Upload
     const uploadRes = await fetch(`${API_URL}/upload/`, {
       method: "POST",
       body: formData
@@ -532,7 +532,6 @@ const handleChartClick = (chart: ChartData, event: any) => {
 
     try {
 
-      // ✅ FIXED ENDPOINT
       const response = await fetch(`${API_URL}/data-chat/query`, {
         method: "POST",
         headers: {
@@ -560,7 +559,7 @@ const handleChartClick = (chart: ChartData, event: any) => {
           const chunk = decoder.decode(value, { stream: true });
           assistantText += chunk;
 
-          // ================= 🔥 NEW FEATURE: CHART DETECTION =================
+          // ================= CHART DETECTION =================
           if (assistantText.startsWith("__CHART__")) {
             try {
               const chartJson = JSON.parse(
@@ -573,15 +572,15 @@ const handleChartClick = (chart: ChartData, event: any) => {
                 layout: chartJson.layout
               };
 
-              // ✅ Add chart to dashboard
+              // Add chart to dashboard
               setChartData(prev => [newChart, ...prev]);
 
-              // ✅ Show confirmation message
+              // Show confirmation message
               setChatMessages(prev => {
                 const updated = [...prev];
                 updated[updated.length - 1] = {
                   role: "assistant",
-                  content: "📊 Visualization generated based on your query."
+                  content: "Visualization generated based on your query."
                 };
                 return updated;
               });
@@ -590,7 +589,7 @@ const handleChartClick = (chart: ChartData, event: any) => {
               console.error("Chart parse error:", err);
             }
 
-            return; // 🚀 STOP normal text flow
+            return; // chart handled — skip the normal text rendering
           }
 
           // ================= NORMAL TEXT FLOW =================
@@ -729,7 +728,7 @@ const handleChartClick = (chart: ChartData, event: any) => {
 
             </div>
 
-            {/* ✅ RIGHT SIDE (FIXED) */}
+            {/* Right-side actions */}
             <div className="flex items-center gap-2">
 
               <ThemeToggle />
@@ -1181,7 +1180,7 @@ const handleChartClick = (chart: ChartData, event: any) => {
         layout={{
           ...selectedChart.layout,
           ...themedPlotLayout,
-          height: 600,   // 🔥 BIG VIEW
+          height: 600, // enlarged view
         }}
         style={{ width: "100%", height: "600px" }}
         config={{ responsive: true }}

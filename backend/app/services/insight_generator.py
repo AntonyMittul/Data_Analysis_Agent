@@ -4,8 +4,8 @@ from app.config.llm import get_llm
 # Slightly higher ceiling + warmth for a richer, analyst-style briefing.
 llm = get_llm(temperature=0.3, max_output_tokens=1500)
 
-# 🔥 ADD THIS FUNCTION
 def summarize_charts(charts):
+    """Reduce each chart to compact numeric stats (min/max/avg/points) for the LLM."""
     summaries = []
 
     for chart in charts:
@@ -77,7 +77,7 @@ def generate_insights(profile, charts):
             "datetime_columns": profile.get("datetime_columns", [])
         }
 
-        # 🔥 USE CLEAN SUMMARY INSTEAD OF RAW CHART JSON
+        # Use the compact numeric summary instead of raw chart JSON to keep the prompt small.
         chart_summary = summarize_charts(charts)
 
         prompt = f"""
@@ -132,5 +132,5 @@ Rules:
         return response
 
     except Exception as e:
-        print("[❌ INSIGHT ERROR]:", str(e))
+        print("[INSIGHT ERROR]:", str(e))
         return "⚠️ Insight generation failed."

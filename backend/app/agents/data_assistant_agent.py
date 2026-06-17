@@ -112,7 +112,7 @@ Answer clearly and professionally.
     full_response = ""
 
     try:
-        # 🔥 INSTANT FEEDBACK (UX FIX)
+        # Immediate feedback so the user sees activity while the model responds.
         yield "Analyzing your data...\n\n"
 
         try:
@@ -137,7 +137,7 @@ Answer clearly and professionally.
         yield "\n⚠️ Failed to generate response."
         return
 
-    # 🔥 FINAL FALLBACK
+    # Fallback if the model returned nothing.
     if not full_response.strip():
         yield "⚠️ I'm having trouble analyzing the data right now. Please try again."
         return

@@ -9,12 +9,12 @@ def store_documents(chunks, doc_id):
 
     embeddings = get_embeddings()
 
-    # 🔥 Create folder if not exists
+    # Create folder if not exists
     os.makedirs(VECTOR_DB_PATH, exist_ok=True)
 
     db = FAISS.from_documents(chunks, embeddings)
 
-    # 🔥 Save to disk
+    # Save to disk
     path = f"{VECTOR_DB_PATH}/{doc_id}"
     db.save_local(path)
     db_cache[doc_id] = db

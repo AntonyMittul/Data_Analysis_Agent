@@ -9,7 +9,7 @@ class StructuredDataAgent:
         pass
 
     # ===============================
-    # 🔹 STEP 1: PREPROCESS DATA
+    # STEP 1: PREPROCESS DATA
     # ===============================
     def preprocess(self, df: pd.DataFrame):
 
@@ -25,7 +25,7 @@ class StructuredDataAgent:
         return df
 
     # ===============================
-    # 🔹 STEP 2: IDENTIFY USEFUL COLUMNS
+    # STEP 2: IDENTIFY USEFUL COLUMNS
     # ===============================
     def is_identifier(self, col: str):
         col = col.lower()
@@ -54,7 +54,7 @@ class StructuredDataAgent:
         return numeric, categorical, datetime
 
     # ===============================
-    # 🔹 STEP 3: DATA UNDERSTANDING
+    # STEP 3: DATA UNDERSTANDING
     # ===============================
     def analyze_structure(self, df: pd.DataFrame):
 
@@ -70,22 +70,22 @@ class StructuredDataAgent:
         }
 
     # ===============================
-    # 🔹 STEP 4: GENERATE VISUALS
+    # STEP 4: GENERATE VISUALS
     # ===============================
     def generate_visuals(self, df: pd.DataFrame):
         return generate_visualizations(df)
 
     # ===============================
-    # 🔥 STEP 5: BUILD LIGHTWEIGHT LLM CONTEXT
+    # STEP 5: BUILD LIGHTWEIGHT LLM CONTEXT
     # ===============================
     def build_context(self, df, structure_info):
 
-        # 🔥 SMALL SAMPLE ONLY
+        # SMALL SAMPLE ONLY
         df_sample = df.head(30)
 
         columns = list(df.columns)
 
-        # 🔹 LIMITED SCHEMA
+        # LIMITED SCHEMA
         schema = {}
         for col in columns[:10]:
             try:
@@ -96,7 +96,7 @@ class StructuredDataAgent:
             except:
                 continue
 
-        # 🔹 LIMITED NUMERIC STATS
+        # LIMITED NUMERIC STATS
         stats = {}
         for col in structure_info["numeric_columns"][:5]:
             try:
@@ -108,7 +108,7 @@ class StructuredDataAgent:
             except:
                 continue
 
-        # 🔹 LIMITED CATEGORIES
+        # LIMITED CATEGORIES
         categories = {}
         for col in structure_info["categorical_columns"][:3]:
             try:
@@ -116,7 +116,7 @@ class StructuredDataAgent:
             except:
                 continue
 
-        # 🔥 LIMIT TEXT SIZE
+        # LIMIT TEXT SIZE
         sample_text = df_sample.to_string(index=False)[:1500]
 
         llm_context = f"""
@@ -149,7 +149,7 @@ Categories:
         }
 
     # ===============================
-    # 🔹 MAIN PIPELINE
+    # MAIN PIPELINE
     # ===============================
     def run(self, df: pd.DataFrame):
 

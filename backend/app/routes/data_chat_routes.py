@@ -20,13 +20,13 @@ async def data_chat(request: DataChatRequest):
     file_path = request.file_path
     session_id = request.session_id
 
-    # ✅ CONTEXT FETCH
+    # CONTEXT FETCH
     context = dataset_sessions.get(file_path)
 
     if not context:
         return {"error": "Dataset not analyzed yet"}
 
-    # 🔥 ENSURE INSIGHTS EXIST
+    # ENSURE INSIGHTS EXIST
     if not context.get("insights"):
         context["insights"] = "Insights are being generated. You can still ask questions based on charts and data."
 
