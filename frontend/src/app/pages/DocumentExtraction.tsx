@@ -27,6 +27,17 @@ const GREETING: Message = {
     "Hello! Upload a document and get insights, predictions and recommendations. I can also help with general sales, finance, and business topics.",
 };
 
+// One-click analysis prompts shown after a document is uploaded.
+const QUICK_ACTIONS = [
+  { label: "Executive Summary", prompt: "Give me a concise executive summary of this document — the most important points a busy executive needs to know." },
+  { label: "Key Insights", prompt: "What are the key insights from this document? List the most important findings with brief explanations." },
+  { label: "Risks & Concerns", prompt: "Identify the key risks, concerns, red flags, or potential issues raised in this document." },
+  { label: "Recommendations", prompt: "Based on this document, what are your professional recommendations and why?" },
+  { label: "Action Items", prompt: "Extract a clear, numbered list of action items and next steps from this document." },
+  { label: "Trend Analysis", prompt: "Analyze any trends, patterns, or changes over time described in this document, with supporting figures." },
+  { label: "Technical Summary", prompt: "Provide a technical summary of this document, covering key methods, specifications, figures, or technical details." },
+];
+
 export function DocumentExtraction() {
   const [messages, setMessages] = useState<Message[]>([GREETING]);
 
@@ -196,12 +207,10 @@ export function DocumentExtraction() {
   };
 
   // ================= QUERY STREAMING =================
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const sendQuestion = async (raw: string) => {
+    const question = raw.trim();
+    if (!question || isStreaming) return;
 
-    if (!input.trim() || isStreaming) return;
-
-    const question = input;
     setInput("");
 
     setMessages(prev => [
@@ -275,6 +284,11 @@ export function DocumentExtraction() {
       // Refresh the sidebar so a newly created chat appears with its title.
       fetchSessions();
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendQuestion(input);
   };
 
   return (
@@ -481,6 +495,24 @@ export function DocumentExtraction() {
 
       <footer className="bg-white border-t border-slate-200 px-6 py-3">
         <div className="max-w-4xl mx-auto">
+
+          {/* One-click analysis actions (shown once a document is loaded) */}
+          {uploadedFile && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {QUICK_ACTIONS.map((a) => (
+                <button
+                  key={a.label}
+                  type="button"
+                  disabled={isStreaming}
+                  onClick={() => sendQuestion(a.prompt)}
+                  className="text-xs px-3 py-1.5 rounded-full border border-violet-200 text-violet-700 bg-violet-50 hover:bg-violet-100 disabled:opacity-50 transition-colors"
+                >
+                  {a.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="flex items-center gap-3">
             <input
               ref={fileInputRef}
