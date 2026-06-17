@@ -32,6 +32,15 @@ app.include_router(chat_router)
 app.include_router(data_chat_router, prefix="/data-chat")
 
 
+from app.config import settings
+
+
 @app.get("/")
 def root():
-    return {"message": "Backend running"}
+    # Diagnostic: confirms which model the LIVE backend is actually using.
+    return {
+        "message": "Backend running",
+        "model": settings.GEMINI_MODEL,
+        "embedding_model": settings.EMBEDDING_MODEL,
+        "google_api_key_set": bool(settings.GOOGLE_API_KEY),
+    }
