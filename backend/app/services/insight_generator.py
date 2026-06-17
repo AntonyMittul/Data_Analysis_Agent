@@ -1,8 +1,8 @@
 import json
 from app.config.llm import get_llm
 
-# ✅ Optimized LLM config
-llm = get_llm(temperature=0.1, max_output_tokens=1024)
+# Slightly higher ceiling + warmth for a richer, analyst-style briefing.
+llm = get_llm(temperature=0.3, max_output_tokens=1500)
 
 # 🔥 ADD THIS FUNCTION
 def summarize_charts(charts):
@@ -81,35 +81,39 @@ def generate_insights(profile, charts):
         chart_summary = summarize_charts(charts)
 
         prompt = f"""
-You are a business analyst.
+You are a senior business analyst writing a briefing for an executive. Using ONLY
+the dataset summary and chart statistics below, produce a concise, decision-focused
+analysis — not a list of chart descriptions.
 
 Dataset Summary:
 {compact_profile}
 
-Chart Insights:
+Chart Statistics:
 {chart_summary}
 
-Generate COMPLETE insights.
+Write in clean Markdown with EXACTLY these sections:
 
-FORMAT:
+## Executive Summary
+2-3 sentences capturing the single most important story in this data.
 
-Key Trends:
-1.
-2.
-3.
+## Key Findings
+3-5 bullet points. For each finding, state what the data shows, then briefly WHY it
+matters and its likely business IMPACT. Use real numbers from the summary/stats.
 
-Issues:
-1.
-2.
+## Risks & Anomalies
+2-3 bullets on concerning patterns, outliers, or threats in the data.
 
-Recommendations:
-1.
-2.
-3.
+## Opportunities
+2-3 bullets on areas the business could capitalize on.
 
-IMPORTANT:
-- Use actual numbers from chart summary
-- Do NOT say data is missing
+## Recommended Actions
+3-4 specific, actionable next steps a manager could take based on this data.
+
+Rules:
+- Use ACTUAL figures from the summary/stats; never invent numbers.
+- Be business-focused (revenue, efficiency, growth, risk) — avoid generic phrasing
+  like "the bar chart shows...".
+- Keep it tight and skimmable. Never say the data is missing.
 """
 
         print("[LLM CALL STARTED]")

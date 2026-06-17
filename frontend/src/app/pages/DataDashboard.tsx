@@ -19,7 +19,9 @@ import {
   Calendar,
   Trophy,
   Check,
-  Download
+  Download,
+  Sparkles,
+  ChevronDown
 } from "lucide-react";
 
 import { classifyCharts } from "../../utils/ChartClassifier";
@@ -196,6 +198,7 @@ export function DataDashboard() {
   const [chatInput, setChatInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [dashboardInsights, setDashboardInsights] = useState<string | null>(null);
 
@@ -291,12 +294,13 @@ const pollInsights = async (path: string) => {
       // ✅ SET INSIGHTS
       setDashboardInsights(insights);
 
-      // ✅ UPDATE CHATBOT IMMEDIATELY
+      // ✅ UPDATE CHATBOT IMMEDIATELY (summary now lives in its own section above)
       setChatMessages([
         {
           role: "assistant",
-          content: `I've analyzed your dataset. Here are key insights:\n\n${insights}\n\nAsk me anything about the data.`
-        }
+          content:
+            "I've analyzed your dataset and prepared an **executive summary** above. Ask me anything — trends, specific numbers, comparisons, or what to do next.",
+        },
       ]);
 
       return;
@@ -530,6 +534,46 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
   const categorizedCharts = classifyCharts(chartData);
 
+  // Declutter: show the first few (most decision-relevant) charts up front,
+  // tuck the rest into an expandable "Advanced analytics" section.
+  const primaryCharts = chartData.slice(0, 4);
+  const advancedCharts = chartData.slice(4);
+
+  const summaryReady =
+    !!dashboardInsights && !dashboardInsights.toLowerCase().includes("generating");
+
+  const renderChart = (chart: ChartData, idx: number) => (
+    <ChartCard key={idx} title={chart.title} onClick={() => setSelectedChart(chart)}>
+      <Plot
+        data={[
+          ...chart.data,
+          ...(chart.prediction
+            ? [{
+                x: chart.prediction.x,
+                y: chart.prediction.y,
+                type: "scatter",
+                mode: "lines",
+                name: "Forecast",
+                line: { dash: "dot" },
+              }]
+            : []),
+        ]}
+        layout={{
+          ...chart.layout,
+          ...themedPlotLayout,
+          title: "",
+          autosize: true,
+          height: 400,
+          width: undefined,
+          margin: { l: 50, r: 20, t: 20, b: 50 },
+        }}
+        useResizeHandler={true}
+        style={{ width: "100%", height: "400px" }}
+        config={{ responsive: true, displayModeBar: false }}
+      />
+    </ChartCard>
+  );
+
   
 
   return (
@@ -654,64 +698,62 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
                 ))}
               </div>
 
-              {/* Visual Analytics Content */}
+              {/* AI Executive Summary */}
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 lg:p-8">
-                <div className="flex items-center justify-between mb-8 border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                    <Sparkles size={18} />
+                  </div>
                   <div>
-                    <h2 className="text-xl font-bold text-slate-800">Visual Analytics</h2>
-                    <p className="text-sm text-slate-500 mt-1">AI-generated charts</p>
+                    <h2 className="text-xl font-bold text-slate-800">AI Executive Summary</h2>
+                    <p className="text-sm text-slate-500">Key findings, risks, and recommended actions</p>
                   </div>
                 </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
-                  {chartData.map((chart, idx) => (
-                <ChartCard
-  key={idx}
-  title={chart.title}
-  onClick={() => setSelectedChart(chart)}
->
-                      <Plot
-  data={[
-  ...chart.data,
-  ...(chart.prediction
-    ? [{
-        x: chart.prediction.x,
-        y: chart.prediction.y,
-        type: "scatter",
-        mode: "lines",
-        name: "Forecast",
-        line: { dash: "dot" }
-      }]
-    : [])
-]}
-  layout={{
-    ...chart.layout,
-    ...themedPlotLayout,
+                {summaryReady ? (
+                  <Markdown>{dashboardInsights as string}</Markdown>
+                ) : (
+                  <div className="space-y-2 animate-pulse">
+                    <div className="h-3 bg-slate-100 rounded w-3/4" />
+                    <div className="h-3 bg-slate-100 rounded w-full" />
+                    <div className="h-3 bg-slate-100 rounded w-5/6" />
+                    <p className="text-sm text-slate-400 pt-2 flex items-center gap-2">
+                      <Loader2 className="animate-spin" size={14} /> Generating your executive summary…
+                    </p>
+                  </div>
+                )}
+              </div>
 
-    title: "",
-
-    autosize: true,
-
-    // 🔥 FORCE HEIGHT
-    height: 400,   // key fix
-    width: undefined,
-
-    margin: { l: 50, r: 20, t: 20, b: 50 },
-  }}
-  useResizeHandler={true}
-  style={{
-    width: "100%",
-    height: "400px",   // 🔥 must match layout height
-  }}
-  config={{
-    responsive: true,
-    displayModeBar: false
-  }}
-/>
-                    </ChartCard>
-                  ))}
+              {/* Key Visualizations */}
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 lg:p-8">
+                <div className="mb-6 border-b border-slate-100 pb-4">
+                  <h2 className="text-xl font-bold text-slate-800">Key Visualizations</h2>
+                  <p className="text-sm text-slate-500 mt-1">The most decision-relevant charts</p>
                 </div>
 
-                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+                  {primaryCharts.map((chart, idx) => renderChart(chart, idx))}
+                </div>
+
+                {advancedCharts.length > 0 && (
+                  <>
+                    <button
+                      onClick={() => setShowAdvanced((v) => !v)}
+                      className="mt-6 flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700"
+                    >
+                      <ChevronDown
+                        size={16}
+                        className={`transition-transform ${showAdvanced ? "rotate-180" : ""}`}
+                      />
+                      {showAdvanced ? "Hide" : "Show"} advanced analytics ({advancedCharts.length})
+                    </button>
+
+                    {showAdvanced && (
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full mt-6 animate-in fade-in duration-300">
+                        {advancedCharts.map((chart, idx) => renderChart(chart, idx + primaryCharts.length))}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           )}
