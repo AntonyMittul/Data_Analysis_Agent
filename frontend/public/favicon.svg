@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Ascending 3D bar chart — data analytics / business insight -->
+  <!-- Bar 1 (shortest) -->
+  <polygon points="40,300 150,300 180,270 70,270" fill="#F7CE83"/>
+  <polygon points="150,300 180,270 180,410 150,440" fill="#D9863B"/>
+  <rect x="40" y="300" width="110" height="140" fill="#EA9A4D"/>
+  <!-- Bar 2 (medium) -->
+  <polygon points="200,170 310,170 340,140 230,140" fill="#F7CE83"/>
+  <polygon points="310,170 340,140 340,410 310,440" fill="#D9863B"/>
+  <rect x="200" y="170" width="110" height="270" fill="#EA9A4D"/>
+  <!-- Bar 3 (tallest) -->
+  <polygon points="360,60 470,60 500,30 390,30" fill="#F7CE83"/>
+  <polygon points="470,60 500,30 500,410 470,440" fill="#D9863B"/>
+  <rect x="360" y="60" width="110" height="380" fill="#EA9A4D"/>
+</svg>
