@@ -88,6 +88,13 @@ const transformToPlotly = (chart: any) => {
 
 // ================= UI HELPERS =================
 
+const SUGGESTED_QUESTIONS = [
+  "What are the top 3 trends?",
+  "Where are the biggest risks?",
+  "What should we focus on next?",
+  "Summarize performance in one line",
+];
+
 const renderMessageContent = (content: string) => {
   if (!content) return null;
   return <Markdown>{content}</Markdown>;
@@ -402,13 +409,11 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
   // ================= CHAT =================
 
-  const handleChatSubmit = async (e: React.FormEvent) => {
+  const sendMessage = async (text: string) => {
 
-    e.preventDefault();
+    const userMessage = text.trim();
 
-    if (!chatInput.trim() || !filePath) return;
-
-    const userMessage = chatInput;
+    if (!userMessage || !filePath) return;
 
     setChatMessages(prev => [
       ...prev,
@@ -496,6 +501,11 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handleChatSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessage(chatInput);
   };
 
   // ================= KPI =================
@@ -767,9 +777,10 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
           <button
             onClick={() => setIsChatOpen(!isChatOpen)}
-            className="fixed bottom-8 right-8 w-14 h-14 bg-blue-600 hover:bg-blue-700 transition-colors text-white rounded-full shadow-lg flex items-center justify-center z-50"
+            className="fixed bottom-8 right-8 flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 transition-colors text-white rounded-full shadow-lg z-50"
           >
-            {isChatOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
+            {isChatOpen ? <X className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
+            <span className="font-medium text-sm">{isChatOpen ? "Close" : "Ask AI Analyst"}</span>
           </button>
 
         )}
@@ -794,9 +805,12 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
             <div className="flex items-center justify-between px-6 py-4 border-b bg-slate-50 border-slate-200">
               <div className="flex items-center gap-2">
                 <div className="bg-blue-600 p-1.5 rounded-md">
-                  <MessageSquare size={18} className="text-white" />
+                  <Sparkles size={18} className="text-white" />
                 </div>
-                <h2 className="font-semibold text-slate-800">Ask Data Agent</h2>
+                <div>
+                  <h2 className="font-semibold text-slate-800 leading-tight">AI Data Analyst</h2>
+                  <p className="text-xs text-slate-500">Ask anything about your data</p>
+                </div>
               </div>
               <button onClick={() => setIsChatOpen(false)} className="text-slate-500 hover:text-slate-800 transition-colors">
                 <X className="w-5 h-5"/>
@@ -832,6 +846,21 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
               ))}
 
             </div>
+
+            {chatMessages.length <= 1 && (
+              <div className="px-4 pt-2 flex flex-wrap gap-2">
+                {SUGGESTED_QUESTIONS.map((q) => (
+                  <button
+                    key={q}
+                    type="button"
+                    onClick={() => sendMessage(q)}
+                    className="text-xs px-3 py-1.5 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-blue-300 transition-colors"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            )}
 
             <form onSubmit={handleChatSubmit} className="border-t p-4">
 
