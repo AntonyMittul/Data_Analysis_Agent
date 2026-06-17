@@ -34,6 +34,7 @@ interface ChartData {
   title: string;
   data: any[];
   layout: any;
+  category?: string; // column used on the x-axis (enables click-to-filter drill-down)
 
   // ADD THIS
   prediction?: {
@@ -221,6 +222,12 @@ export function DataDashboard() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [datasetStats, setDatasetStats] = useState<any>(null);
+
+  // Global filters & drill-down
+  const [filterOptions, setFilterOptions] = useState<any>(null);
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [ranges, setRanges] = useState<Record<string, [number, number]>>({});
+  const [isFiltering, setIsFiltering] = useState(false);
   const [selectedChart, setSelectedChart] = useState<ChartData | null>(null);
   const [showDataModal, setShowDataModal] = useState(false);
   const [tableData, setTableData] = useState<any[]>([]);
@@ -349,60 +356,98 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
     setFilePath(returnedPath);
 
-    // 2️⃣ Analyze (FAST API)
-    const analyzeRes = await fetch(
-      `${API_URL}/analyze?file_path=${returnedPath}`
-    );
-
-    const analysis = await analyzeRes.json();
-
-    setDatasetStats(analysis.dataset_stats || null);
-
-    // ✅ FIXED: CLEAN CHART PARSING (NO UI CHANGE)
-    const charts = (analysis.charts || [])
-    .map((c: any) => {
-      try {
-
-        let fig = c.figure;
-
-        if (!fig) return null;
-
-        // 🔥 FIX: ensure valid structure
-        if (!fig.data || !fig.layout) {
-          console.warn("Invalid chart:", c);
-          return null;
-        }
-
-        return {
-          title: c.title || "Chart",
-          data: fig.data,
-          layout: fig.layout || {}
-        };
-
-      } catch (err) {
-        console.error("Chart error:", err);
-        return null;
-      }
-    })
-    .filter(Boolean);
-
-    console.log("BACKEND CHARTS:", analysis.charts);
-
-    setChartData(charts);
-
-    // ✅ FIX: Proper async insights flow
-    setDashboardInsights("Generating insights...");
-
-    // 🔥 START POLLING IMMEDIATELY (NO DELAY)
-    setTimeout(() => {
-      pollInsights(returnedPath);
-    }, 0);
+    // Fresh upload → clear any prior filters, then analyze.
+    setFilters({});
+    setRanges({});
+    await runAnalysis(returnedPath, null);
 
   } catch (err) {
     console.error(err);
   }
 
   setIsLoading(false);
+};
+
+// Re-usable analyze call: applies an optional filter spec and refreshes
+// charts, KPIs, filter options and the executive summary.
+const runAnalysis = async (
+  path: string,
+  spec: { filters?: Record<string, string>; ranges?: Record<string, [number, number]> } | null
+) => {
+  try {
+    const hasSpec =
+      spec && ((spec.filters && Object.keys(spec.filters).length) ||
+               (spec.ranges && Object.keys(spec.ranges).length));
+    const q = hasSpec ? `&filters=${encodeURIComponent(JSON.stringify(spec))}` : "";
+
+    const res = await fetch(`${API_URL}/analyze?file_path=${path}${q}`);
+    const analysis = await res.json();
+
+    setDatasetStats(analysis.dataset_stats || null);
+    if (analysis.filter_options) setFilterOptions(analysis.filter_options);
+
+    const charts = (analysis.charts || [])
+      .map((c: any) => {
+        const fig = c.figure;
+        if (!fig || !fig.data || !fig.layout) return null;
+        return {
+          title: c.title || "Chart",
+          data: fig.data,
+          layout: fig.layout || {},
+          category: c.category,
+        };
+      })
+      .filter(Boolean);
+
+    setChartData(charts);
+    setDashboardInsights("Generating insights...");
+    setTimeout(() => pollInsights(path), 0);
+  } catch (err) {
+    console.error("Analysis failed:", err);
+  }
+};
+
+// Apply the current filter/range selection (called on filter change & drill-down).
+const applyFilters = async (
+  nextFilters: Record<string, string>,
+  nextRanges: Record<string, [number, number]>
+) => {
+  if (!filePath) return;
+  setIsFiltering(true);
+  try {
+    await runAnalysis(filePath, { filters: nextFilters, ranges: nextRanges });
+  } finally {
+    setIsFiltering(false);
+  }
+};
+
+const setCategoricalFilter = (col: string, value: string) => {
+  const next = { ...filters };
+  if (!value) delete next[col];
+  else next[col] = value;
+  setFilters(next);
+  applyFilters(next, ranges);
+};
+
+const setRangeFilter = (col: string, lo: number, hi: number) => {
+  const next = { ...ranges, [col]: [lo, hi] as [number, number] };
+  setRanges(next);
+  applyFilters(filters, next);
+};
+
+const clearFilters = () => {
+  setFilters({});
+  setRanges({});
+  applyFilters({}, {});
+};
+
+// Drill-down: clicking a bar/slice filters the whole dashboard to that value.
+const handleChartClick = (chart: ChartData, event: any) => {
+  if (!chart.category || !event?.points?.length) return;
+  const pt = event.points[0];
+  const value = pt.x ?? pt.label;
+  if (value === undefined || value === null) return;
+  setCategoricalFilter(chart.category, String(value));
 };
 
 
@@ -553,7 +598,11 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     !!dashboardInsights && !dashboardInsights.toLowerCase().includes("generating");
 
   const renderChart = (chart: ChartData, idx: number) => (
-    <ChartCard key={idx} title={chart.title} onClick={() => setSelectedChart(chart)}>
+    <ChartCard
+      key={idx}
+      title={chart.title}
+      onClick={chart.category ? undefined : () => setSelectedChart(chart)}
+    >
       <Plot
         data={[
           ...chart.data,
@@ -578,9 +627,15 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
           margin: { l: 50, r: 20, t: 20, b: 50 },
         }}
         useResizeHandler={true}
+        onClick={chart.category ? (e: any) => handleChartClick(chart, e) : undefined}
         style={{ width: "100%", height: "400px" }}
         config={{ responsive: true, displayModeBar: false }}
       />
+      {chart.category && (
+        <p className="text-xs text-slate-400 mt-1">
+          Tip: click a bar to filter by {chart.category.replace(/_/g, " ")}
+        </p>
+      )}
     </ChartCard>
   );
 
@@ -700,7 +755,72 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
           {chartData.length > 0 && (
             <div className="space-y-6 animate-in fade-in duration-500 w-full">
-              
+
+              {/* Global Filters */}
+              {filterOptions &&
+                (Object.keys(filterOptions.categorical || {}).length > 0 ||
+                  Object.keys(filterOptions.ranges || {}).length > 0) && (
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 flex flex-wrap items-end gap-4">
+                    <div className="flex items-center gap-2 text-slate-700 font-semibold text-sm">
+                      <Filter size={16} /> Filters
+                      {isFiltering && <Loader2 size={14} className="animate-spin text-indigo-600" />}
+                    </div>
+
+                    {Object.entries(filterOptions.categorical || {}).map(([col, vals]: any) => (
+                      <div key={col} className="flex flex-col">
+                        <label className="text-xs text-slate-400 mb-1 capitalize">
+                          {col.replace(/_/g, " ")}
+                        </label>
+                        <select
+                          value={filters[col] || ""}
+                          onChange={(e) => setCategoricalFilter(col, e.target.value)}
+                          className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-[140px]"
+                        >
+                          <option value="">All</option>
+                          {(vals as string[]).map((v) => (
+                            <option key={v} value={v}>{v}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
+
+                    {Object.entries(filterOptions.ranges || {}).map(([col, r]: any) => {
+                      const cur = ranges[col] || [r.min, r.max];
+                      return (
+                        <div key={col} className="flex flex-col">
+                          <label className="text-xs text-slate-400 mb-1 capitalize">
+                            {col.replace(/_/g, " ")} ({cur[0]}–{cur[1]})
+                          </label>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number" min={r.min} max={r.max} value={cur[0]}
+                              onChange={(e) => setRanges({ ...ranges, [col]: [Number(e.target.value), cur[1]] })}
+                              onBlur={() => applyFilters(filters, ranges)}
+                              className="w-20 text-sm border border-slate-200 rounded-lg px-2 py-2 bg-slate-50"
+                            />
+                            <span className="text-slate-400">–</span>
+                            <input
+                              type="number" min={r.min} max={r.max} value={cur[1]}
+                              onChange={(e) => setRanges({ ...ranges, [col]: [cur[0], Number(e.target.value)] })}
+                              onBlur={() => applyFilters(filters, ranges)}
+                              className="w-20 text-sm border border-slate-200 rounded-lg px-2 py-2 bg-slate-50"
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {(Object.keys(filters).length > 0 || Object.keys(ranges).length > 0) && (
+                      <button
+                        onClick={clearFilters}
+                        className="text-sm text-slate-500 hover:text-red-500 flex items-center gap-1 ml-auto"
+                      >
+                        <X size={14} /> Clear filters
+                      </button>
+                    )}
+                  </div>
+                )}
+
               {/* Dynamic KPIs Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {kpis.map((kpi, idx) => (

@@ -144,7 +144,7 @@ def _bar_category_counts(df, cat):
                  color_discrete_sequence=QUAL)
     fig.update_layout(template=TEMPLATE, xaxis_tickangle=-30,
                       showlegend=False, margin=dict(b=110))
-    return {"title": f"Record count by {cat}", "figure": _fig_json(fig)}
+    return {"title": f"Record count by {cat}", "figure": _fig_json(fig), "category": cat}
 
 
 def _pie_category_share(df, cat):
@@ -159,7 +159,7 @@ def _pie_category_share(df, cat):
                  color_discrete_sequence=px.colors.qualitative.Pastel)
     fig.update_traces(textposition="inside", textinfo="percent+label")
     fig.update_layout(template=TEMPLATE)
-    return {"title": f"{cat} share", "figure": _fig_json(fig)}
+    return {"title": f"{cat} share", "figure": _fig_json(fig), "category": cat}
 
 
 def _bar_measure_by_category(df, measure, cat):
@@ -173,7 +173,7 @@ def _bar_measure_by_category(df, measure, cat):
                  color_discrete_sequence=QUAL)
     fig.update_layout(template=TEMPLATE, xaxis_tickangle=-30,
                       showlegend=False, margin=dict(b=110))
-    return {"title": title, "figure": _fig_json(fig)}
+    return {"title": title, "figure": _fig_json(fig), "category": cat}
 
 
 def _line_trend(df, measure, tcol, is_year):
@@ -414,3 +414,44 @@ def build_kpi_cards(df: pd.DataFrame, quality: dict | None = None):
         cards.append(highlight)
 
     return cards
+
+
+# ===============================
+# FILTER OPTIONS (for global dashboard filters)
+# ===============================
+def build_filter_options(df: pd.DataFrame):
+    """Describe which columns can be filtered and their possible values.
+
+    Categorical columns -> a list of values (dropdown). Year/numeric-time
+    columns -> a {min, max} range.
+    """
+    clean = preprocess_data(df)
+    measures, categoricals, datetimes, years, ids = classify_columns(clean)
+
+    options = {"categorical": {}, "ranges": {}}
+
+    for col in categoricals:
+        vals = clean[col].dropna().astype(str).value_counts().index.tolist()[:50]
+        options["categorical"][col] = sorted(vals)
+
+    for col in years:
+        v = pd.to_numeric(clean[col], errors="coerce").dropna()
+        if len(v):
+            options["ranges"][col] = {"min": int(v.min()), "max": int(v.max())}
+
+    return options
+
+
+def apply_filters(df: pd.DataFrame, spec: dict):
+    """Apply a filter spec: {filters: {col: value}, ranges: {col: [lo, hi]}}."""
+    if not spec:
+        return df
+    out = df
+    for col, val in (spec.get("filters") or {}).items():
+        if val not in (None, "", "All") and col in out.columns:
+            out = out[out[col].astype(str) == str(val)]
+    for col, rng in (spec.get("ranges") or {}).items():
+        if col in out.columns and isinstance(rng, (list, tuple)) and len(rng) == 2:
+            s = pd.to_numeric(out[col], errors="coerce")
+            out = out[(s >= rng[0]) & (s <= rng[1])]
+    return out

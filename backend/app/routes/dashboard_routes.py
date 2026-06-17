@@ -1,10 +1,16 @@
 from fastapi import APIRouter
 from concurrent.futures import ThreadPoolExecutor
 import threading
+import json
 
 from app.services.dataset_loader import load_dataset
 from app.services.data_profiler import profile_dataset
-from app.services.visualization_engine import generate_visualizations, build_kpi_cards
+from app.services.visualization_engine import (
+    generate_visualizations,
+    build_kpi_cards,
+    build_filter_options,
+    apply_filters,
+)
 from app.services.insight_generator import generate_insights
 
 router = APIRouter()
@@ -31,9 +37,23 @@ def generate_insights_background(file_path, profile, charts):
 
 
 @router.get("/analyze")
-def analyze_dataset(file_path: str):
+def analyze_dataset(file_path: str, filters: str = None):
     try:
-        df, quality = load_dataset(file_path, return_quality=True)
+        df_full, quality = load_dataset(file_path, return_quality=True)
+
+        # Filter options always reflect the FULL dataset so selections stay available.
+        filter_options = build_filter_options(df_full)
+
+        # Apply the active filter selection (if any) before computing everything else.
+        spec = None
+        if filters:
+            try:
+                spec = json.loads(filters)
+            except Exception:
+                spec = None
+        df = apply_filters(df_full, spec) if spec else df_full
+        if len(df) == 0:  # filters excluded everything — fall back to full data
+            df = df_full
 
         dataset_stats = {
             "file_name": file_path.replace("\\", "/").split("/")[-1],
@@ -80,6 +100,7 @@ def analyze_dataset(file_path: str):
             "status": "success",
             "charts": charts,
             "dataset_stats": dataset_stats,
+            "filter_options": filter_options,
             "message": "Charts ready. Insights generating in background."
         }
 
