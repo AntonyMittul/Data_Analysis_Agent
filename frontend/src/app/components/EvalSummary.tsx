@@ -40,9 +40,11 @@ const METRICS = [
 export default function EvalSummary({
   filePath,
   signature,
+  onResult,
 }: {
   filePath: string;
   signature: string;
+  onResult?: (result: EvalResult | null) => void;
 }) {
   const [data, setData] = useState<EvalResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -61,6 +63,7 @@ export default function EvalSummary({
         if (cancelled) return;
         if (json?.status === "success") {
           setData(json);
+          onResult?.(json);
           setLoading(false);
           return;
         }

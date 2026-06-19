@@ -17,13 +17,21 @@ export interface PdfKpi {
  * Build and download a multi-page "report style" PDF of the dashboard entirely
  * in the browser — no data is sent to or stored on any server.
  */
+export interface PdfEvaluation {
+  accuracy: number;
+  relevance: number;
+  consistency: number;
+  overall: number;
+}
+
 export async function exportDashboardPdf(opts: {
   fileName?: string;
   kpis?: PdfKpi[];
   charts: PdfChart[];
   insights?: string | null;
+  evaluation?: PdfEvaluation | null;
 }) {
-  const { fileName = "dataset", kpis = [], charts, insights } = opts;
+  const { fileName = "dataset", kpis = [], charts, insights, evaluation } = opts;
 
   const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
   const PW = doc.internal.pageSize.getWidth();
@@ -85,6 +93,52 @@ export async function exportDashboardPdf(opts: {
       }
     });
     y += Math.ceil(kpis.length / 2) * rowH + 6;
+    doc.setDrawColor(226, 232, 240);
+    doc.line(M, y, PW - M, y);
+    y += 22;
+  }
+
+  // ---------- AI evaluation scores ----------
+  if (evaluation) {
+    ensure(60);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(30, 41, 59);
+    doc.text("AI Evaluation", M, y);
+    y += 6;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.text("Automated quality scores for the generated analysis", M, y + 8);
+    y += 22;
+
+    const colorFor = (s: number): [number, number, number] =>
+      s >= 80 ? [5, 150, 105] : s >= 60 ? [217, 119, 6] : [225, 29, 72];
+    const metrics = [
+      ["Accuracy", evaluation.accuracy],
+      ["Relevance", evaluation.relevance],
+      ["Consistency", evaluation.consistency],
+      ["Overall", evaluation.overall],
+    ] as const;
+    const colW = contentW / metrics.length;
+    metrics.forEach(([label, score], i) => {
+      const x = M + i * colW;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(100, 116, 139);
+      doc.text(String(label), x, y);
+      const [r, g, b] = colorFor(Number(score));
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.setTextColor(r, g, b);
+      doc.text(`${score}`, x, y + 20);
+      const scoreW = doc.getTextWidth(`${score}`); // measured at size 18
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(148, 163, 184);
+      doc.text("/100", x + scoreW + 3, y + 20);
+    });
+    y += 36;
     doc.setDrawColor(226, 232, 240);
     doc.line(M, y, PW - M, y);
     y += 22;

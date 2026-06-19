@@ -244,6 +244,7 @@ export function DataDashboard() {
   const [isFiltering, setIsFiltering] = useState(false);
   const [summaryStale, setSummaryStale] = useState(false);
   const [refreshingSummary, setRefreshingSummary] = useState(false);
+  const [evalResult, setEvalResult] = useState<any>(null);
   const [selectedChart, setSelectedChart] = useState<ChartData | null>(null);
   const [showDataModal, setShowDataModal] = useState(false);
   const [tableData, setTableData] = useState<any[]>([]);
@@ -641,6 +642,7 @@ const handleChartClick = (chart: ChartData, event: any) => {
         kpis,
         charts: chartData,
         insights: dashboardInsights,
+        evaluation: evalResult,
       });
     } catch (err) {
       console.error("PDF export failed:", err);
@@ -890,6 +892,7 @@ const handleChartClick = (chart: ChartData, event: any) => {
               <EvalSummary
                 filePath={filePath}
                 signature={`${chartData.length}-${(dashboardInsights || "").length}-${summaryReady}`}
+                onResult={setEvalResult}
               />
 
               {/* Global Filters */}
@@ -1044,9 +1047,9 @@ const handleChartClick = (chart: ChartData, event: any) => {
         </main>
 
 
-        {/* CHAT BUTTON */}
+        {/* CHAT BUTTON (only once visuals exist) */}
 
-        {uploadedFile && (
+        {chartData.length > 0 && (
 
           <button
             onClick={() => setIsChatOpen(!isChatOpen)}
@@ -1066,7 +1069,7 @@ const handleChartClick = (chart: ChartData, event: any) => {
       )}
 
       {/* AGENT SIDE PANEL ("Ask Questions") */}
-      {uploadedFile && (
+      {chartData.length > 0 && (
         <div
           className={`fixed bottom-24 right-4 sm:right-8 w-[calc(100%-2rem)] sm:w-[400px] h-[600px] max-h-[80vh] bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 flex flex-col overflow-hidden transition-all duration-300 ease-in-out origin-bottom-right ${
             isChatOpen ? "scale-100 opacity-100 translate-y-0" : "scale-90 opacity-0 pointer-events-none translate-y-4"
