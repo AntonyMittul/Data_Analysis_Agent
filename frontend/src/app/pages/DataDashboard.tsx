@@ -29,6 +29,7 @@ import Markdown from "../components/Markdown";
 import { ThemeToggle, useTheme } from "../components/ThemeProvider";
 import { exportDashboardPdf } from "../lib/exportPdf";
 import { API_BASE } from "../lib/config";
+import EvalSummary from "../components/EvalSummary";
 
 // ================= TYPES =================
 interface ChartData {
@@ -884,6 +885,12 @@ const handleChartClick = (chart: ChartData, event: any) => {
                   </div>
                 </div>
               )}
+
+              {/* AI Evaluation scores (additive trust layer) */}
+              <EvalSummary
+                filePath={filePath}
+                signature={`${chartData.length}-${(dashboardInsights || "").length}-${summaryReady}`}
+              />
 
               {/* Global Filters */}
               {filterOptions &&

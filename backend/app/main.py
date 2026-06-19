@@ -6,6 +6,7 @@ from app.routes.document_routes import router as document_router
 from app.routes.dashboard_routes import router as dashboard_router
 from app.routes.chat_routes import router as chat_router
 from app.routes.data_chat_routes import router as data_chat_router
+from app.routes.eval_routes import router as eval_router
 
 
 
@@ -30,6 +31,7 @@ app.include_router(document_router)
 app.include_router(dashboard_router)
 app.include_router(chat_router)
 app.include_router(data_chat_router, prefix="/data-chat")
+app.include_router(eval_router)
 
 
 from app.config import settings
