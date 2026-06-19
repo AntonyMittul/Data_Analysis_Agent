@@ -50,20 +50,37 @@ export default function EvalSummary({
   useEffect(() => {
     if (!filePath) return;
     let cancelled = false;
-    setLoading(true);
-    (async () => {
+    let attempts = 0;
+    let timer: ReturnType<typeof setTimeout>;
+
+    const attempt = async () => {
+      attempts += 1;
       try {
         const res = await fetch(`${API_BASE}/evaluate?file_path=${encodeURIComponent(filePath)}`);
         const json = await res.json();
-        if (!cancelled) setData(json?.status === "success" ? json : null);
+        if (cancelled) return;
+        if (json?.status === "success") {
+          setData(json);
+          setLoading(false);
+          return;
+        }
       } catch {
-        if (!cancelled) setData(null);
-      } finally {
-        if (!cancelled) setLoading(false);
+        /* network error — fall through to retry */
       }
-    })();
+      if (cancelled) return;
+      // Retry while the backend wakes / the analysis becomes available (~1 min).
+      if (attempts < 15) {
+        timer = setTimeout(attempt, 4000);
+      } else {
+        setLoading(false);
+      }
+    };
+
+    setLoading(true);
+    attempt();
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
   }, [filePath, signature]);
 
