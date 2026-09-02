@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import Plot from "react-plotly.js";
 import {
   ArrowLeft,
+  ArrowRight,
   Upload,
   MessageCircle,
   X,
@@ -784,67 +785,179 @@ const handleChartClick = (chart: ChartData, event: any) => {
 
           {!uploadedFile && !isLoading && (
 
-            <div className="flex items-center justify-center min-h-[75vh]">
+            <div className="flex items-center justify-center min-h-[80vh] relative w-full overflow-hidden">
+              
+              {/* Background abstract elements (similar to the image) */}
+              {/* Faint dots pattern */}
+              <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ff5a1f 1.5px, transparent 1.5px)', backgroundSize: '36px 36px', opacity: 0.15 }}></div>
+              
+              {/* Grid layout for Desktop, Stacked for Mobile */}
+              <div className="relative z-10 w-full max-w-[1400px] px-4 flex flex-col xl:flex-row items-center justify-between gap-10">
+                
+                {/* Left Floating Widgets */}
+                <div className="hidden xl:flex flex-col gap-6 w-[320px] shrink-0">
+                  {/* Revenue Trend Card */}
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-none">
+                    <div className="text-xs text-slate-500 font-medium mb-1">Revenue Trend</div>
+                    <div className="text-2xl font-bold text-slate-800 dark:text-white">$245,600</div>
+                    <div className="text-xs font-semibold text-green-500 mt-0.5">▲ 16.4%</div>
+                    
+                    <div className="h-28 w-full mt-4 relative">
+                      <svg viewBox="0 0 100 40" preserveAspectRatio="none" className="w-full h-full overflow-visible">
+                        <defs>
+                          <linearGradient id="rev-grad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#ff5a1f" stopOpacity="0.15" />
+                            <stop offset="100%" stopColor="#ff5a1f" stopOpacity="0" />
+                          </linearGradient>
+                        </defs>
+                        <path d="M0,35 L20,25 L40,30 L60,15 L80,20 L100,5 L100,40 L0,40 Z" fill="url(#rev-grad)" />
+                        <polyline points="0,35 20,25 40,30 60,15 80,20 100,5" fill="none" stroke="#ff5a1f" strokeWidth="1.5" />
+                        <circle cx="0" cy="35" r="2.5" fill="#ff5a1f" />
+                        <circle cx="20" cy="25" r="2.5" fill="#ff5a1f" />
+                        <circle cx="40" cy="30" r="2.5" fill="#ff5a1f" />
+                        <circle cx="60" cy="15" r="2.5" fill="#ff5a1f" />
+                        <circle cx="80" cy="20" r="2.5" fill="#ff5a1f" />
+                        <circle cx="100" cy="5" r="2.5" fill="#ff5a1f" />
+                      </svg>
+                      {/* X-axis labels mock */}
+                      <div className="flex justify-between text-[8px] text-slate-400 mt-2 font-medium">
+                        <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span>
+                      </div>
+                    </div>
+                  </div>
 
-              <div className="text-center max-w-2xl">
+                  {/* Sales by Region Donut Card */}
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-none flex items-center gap-6">
+                     <div className="flex-1 text-left">
+                       <div className="text-xs text-slate-500 font-medium mb-4">Sales by Region</div>
+                       <div className="w-20 h-20 rounded-full border-8 border-[#ff5a1f] border-t-[#ffcbb5] border-l-[#ffcbb5] relative shrink-0">
+                         {/* pseudo donut hole */}
+                       </div>
+                     </div>
+                     <div className="flex-1 flex flex-col gap-3 text-[10px] font-medium text-slate-600 dark:text-slate-400">
+                       <div className="flex justify-between items-center"><div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#ff5a1f]"></div>North America</div><span>40%</span></div>
+                       <div className="flex justify-between items-center"><div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#ff885c]"></div>Europe</div><span>30%</span></div>
+                       <div className="flex justify-between items-center"><div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#ffb599]"></div>Asia</div><span>20%</span></div>
+                       <div className="flex justify-between items-center"><div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#ffebd6]"></div>Others</div><span>10%</span></div>
+                     </div>
+                  </div>
+                </div>
 
-                {/* Illustration */}
-                <svg viewBox="0 0 200 130" className="w-44 h-28 mx-auto mb-6" fill="none">
-                  <defs>
-                    <linearGradient id="empty-grad" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="#3b82f6" />
-                      <stop offset="100%" stopColor="#6366f1" />
-                    </linearGradient>
-                  </defs>
-                  <rect x="20" y="70" width="22" height="40" rx="4" fill="url(#empty-grad)" opacity="0.85" />
-                  <rect x="52" y="50" width="22" height="60" rx="4" fill="url(#empty-grad)" opacity="0.65" />
-                  <rect x="84" y="30" width="22" height="80" rx="4" fill="url(#empty-grad)" />
-                  <rect x="116" y="58" width="22" height="52" rx="4" fill="url(#empty-grad)" opacity="0.65" />
-                  <rect x="148" y="44" width="22" height="66" rx="4" fill="url(#empty-grad)" opacity="0.85" />
-                  <path d="M28 64 L63 46 L95 26 L127 52 L159 38" stroke="#9333ea" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                  <circle cx="159" cy="38" r="5" fill="#9333ea" />
-                </svg>
+                {/* Center Content */}
+                <div className="flex-1 max-w-[650px] text-center flex flex-col items-center pb-12">
+                  
+                  {/* Central Icon */}
+                  <div className="w-32 h-24 mb-6 text-[#ff5a1f]">
+                    <svg viewBox="0 0 100 80" className="w-full h-full" fill="currentColor">
+                      <rect x="15" y="40" width="12" height="30" rx="3" />
+                      <rect x="35" y="20" width="12" height="50" rx="3" />
+                      <rect x="55" y="30" width="12" height="40" rx="3" />
+                      <rect x="75" y="10" width="12" height="60" rx="3" />
+                      <polyline points="21,30 41,10 61,20 81,0" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+                      <circle cx="21" cy="30" r="3.5" />
+                      <circle cx="41" cy="10" r="3.5" />
+                      <circle cx="61" cy="20" r="3.5" />
+                      <circle cx="81" cy="0" r="3.5" />
+                    </svg>
+                  </div>
 
-                <h2 className="text-2xl font-bold text-slate-800">
-                  Turn your data into decisions
-                </h2>
+                  <h1 className="text-5xl md:text-[4rem] font-bold tracking-tight text-slate-900 dark:text-white leading-[1.05]">
+                    Turn your <span className="text-[#ff5a1f]">data</span><br/>
+                    into <span className="text-[#ff5a1f]">decisions</span>
+                  </h1>
 
-                <p className="text-slate-500 mt-2 mb-6 max-w-md mx-auto">
-                  Upload a CSV to begin analysis — your AI analyst will profile it,
-                  surface key trends, and build an interactive executive dashboard in seconds.
-                </p>
-
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <Upload className="w-4 h-4" />
-                  Analyze Dataset
-                </button>
-
-                {/* Sample datasets */}
-                <div className="mt-10">
-                  <p className="text-xs uppercase tracking-wider text-slate-400 mb-3">
-                    Or try a sample dataset
+                  <p className="text-lg text-slate-600 dark:text-slate-400 mt-6 mb-10 max-w-[500px] mx-auto font-medium leading-relaxed">
+                    Upload a CSV to begin analysis — your AI analyst will profile it,
+                    surface key trends, and build an interactive executive dashboard in seconds.
                   </p>
-                  <div className="grid sm:grid-cols-2 gap-3 max-w-xl mx-auto">
+
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="inline-flex items-center gap-3 px-8 py-4 bg-[#ff5a1f] text-white font-semibold text-lg rounded-xl hover:bg-[#e04812] transition-colors shadow-[0_8px_20px_rgba(255,90,31,0.25)] hover:shadow-[0_12px_24px_rgba(255,90,31,0.3)] hover:-translate-y-0.5 active:translate-y-0 duration-200"
+                  >
+                    <Upload className="w-5 h-5" strokeWidth={2.5} />
+                    Analyze Dataset
+                  </button>
+
+                  {/* Divider */}
+                  <div className="flex items-center gap-4 w-full max-w-[500px] mt-12 mb-8">
+                    <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1"></div>
+                    <span className="text-xs uppercase tracking-wider font-semibold text-slate-400">Or try a sample dataset</span>
+                    <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1"></div>
+                  </div>
+
+                  {/* Sample datasets */}
+                  <div className="flex flex-col sm:flex-row gap-4 w-full max-w-[580px]">
                     {SAMPLE_DATASETS.map((s) => (
                       <button
                         key={s.path}
                         onClick={() => analyzeSample(s.path, s.name)}
-                        className="text-left p-4 rounded-xl border border-slate-200 bg-white hover:border-blue-400 hover:shadow-sm transition-all"
+                        className="flex-1 flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-[#ff5a1f]/50 hover:shadow-[0_4px_15px_rgba(0,0,0,0.05)] transition-all text-left group"
                       >
-                        <div className="flex items-center gap-2 font-semibold text-slate-800">
-                          <BarChart2 size={16} className="text-blue-600" /> {s.name}
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-[#fff0eb] dark:bg-[#ff5a1f]/10 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                            <BarChart2 size={16} className="text-[#ff5a1f]" />
+                          </div>
+                          <div>
+                            <div className="font-bold text-[13px] text-slate-800 dark:text-slate-100 group-hover:text-[#ff5a1f] transition-colors">{s.name}</div>
+                            <p className="text-[11px] text-slate-500 mt-1 leading-tight">{s.desc}</p>
+                          </div>
                         </div>
-                        <p className="text-xs text-slate-500 mt-1">{s.desc}</p>
+                        <ArrowRight size={16} className="text-[#ff5a1f] opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all ml-2 shrink-0" />
                       </button>
                     ))}
+                  </div>
+
+                </div>
+
+                {/* Right Floating Widgets */}
+                <div className="hidden xl:flex flex-col gap-6 w-[320px] shrink-0">
+                  {/* Top Products Bar Chart */}
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-none">
+                    <div className="text-xs text-slate-500 font-medium mb-6">Top Products</div>
+                    <div className="space-y-5 text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                      <div className="flex items-center gap-3">
+                        <div className="w-16">Product A</div>
+                        <div className="flex-1 h-2.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden"><div className="h-full bg-[#ff5a1f] rounded-full" style={{width: '90%'}}></div></div>
+                        <div className="w-12 text-right">$68,420</div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-16">Product B</div>
+                        <div className="flex-1 h-2.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden"><div className="h-full bg-[#ff885c] rounded-full" style={{width: '70%'}}></div></div>
+                        <div className="w-12 text-right">$52,310</div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-16">Product C</div>
+                        <div className="flex-1 h-2.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden"><div className="h-full bg-[#ffb599] rounded-full" style={{width: '45%'}}></div></div>
+                        <div className="w-12 text-right">$31,200</div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-16">Product D</div>
+                        <div className="flex-1 h-2.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden"><div className="h-full bg-[#ffebd6] rounded-full" style={{width: '25%'}}></div></div>
+                        <div className="w-12 text-right">$18,760</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right side lower widget (scatter plot mock) */}
+                  <div className="w-full h-32 mt-6 relative opacity-60">
+                     <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
+                       <line x1="10" y1="90" x2="10" y2="10" stroke="#cbd5e1" strokeWidth="0.5" />
+                       <line x1="10" y1="90" x2="90" y2="90" stroke="#cbd5e1" strokeWidth="0.5" />
+                       
+                       <circle cx="20" cy="80" r="1.5" fill="#ff5a1f" opacity="0.4" />
+                       <circle cx="30" cy="70" r="1.5" fill="#ff5a1f" opacity="0.6" />
+                       <circle cx="40" cy="85" r="1.5" fill="#ff5a1f" opacity="0.5" />
+                       <circle cx="45" cy="50" r="2" fill="#ff5a1f" opacity="0.7" />
+                       <circle cx="55" cy="60" r="1.5" fill="#ff5a1f" opacity="0.5" />
+                       <circle cx="65" cy="40" r="2" fill="#ff5a1f" opacity="0.8" />
+                       <circle cx="70" cy="30" r="2.5" fill="#ff5a1f" opacity="0.9" />
+                       <circle cx="85" cy="20" r="2.5" fill="#ff5a1f" opacity="1" />
+                     </svg>
                   </div>
                 </div>
 
               </div>
-
             </div>
 
           )}
