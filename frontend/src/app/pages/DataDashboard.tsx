@@ -781,11 +781,11 @@ const handleChartClick = (chart: ChartData, event: any) => {
 
 
         {/* SCROLLABLE MAIN BODY */}
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8">
+        <main className={`flex-1 overflow-y-auto ${(!uploadedFile && !isLoading) ? 'p-0 flex flex-col' : 'p-6 lg:p-8'}`}>
 
           {!uploadedFile && !isLoading && (
 
-            <div className="flex items-center justify-center min-h-[80vh] relative w-full overflow-hidden">
+            <div className="flex-1 flex items-center justify-center relative w-full overflow-hidden min-h-[600px]">
               
               {/* Background abstract elements (similar to the image) */}
               {/* Faint dots pattern */}
@@ -844,10 +844,10 @@ const handleChartClick = (chart: ChartData, event: any) => {
                 </div>
 
                 {/* Center Content */}
-                <div className="flex-1 max-w-[650px] text-center flex flex-col items-center pb-12">
+                <div className="flex-1 max-w-[650px] text-center flex flex-col items-center pb-4 lg:pb-8">
                   
                   {/* Central Icon */}
-                  <div className="w-32 h-24 mb-6 text-[#ff5a1f]">
+                  <div className="w-24 h-16 md:w-32 md:h-24 mb-4 md:mb-6 text-[#ff5a1f]">
                     <svg viewBox="0 0 100 80" className="w-full h-full" fill="currentColor">
                       <rect x="15" y="40" width="12" height="30" rx="3" />
                       <rect x="35" y="20" width="12" height="50" rx="3" />
@@ -861,28 +861,28 @@ const handleChartClick = (chart: ChartData, event: any) => {
                     </svg>
                   </div>
 
-                  <h1 className="text-5xl md:text-[4rem] font-bold tracking-tight text-slate-900 dark:text-white leading-[1.05]">
+                  <h1 className="text-4xl md:text-5xl lg:text-[4rem] font-bold tracking-tight text-slate-900 dark:text-white leading-[1.05]">
                     Turn your <span className="text-[#ff5a1f]">data</span><br/>
                     into <span className="text-[#ff5a1f]">decisions</span>
                   </h1>
 
-                  <p className="text-lg text-slate-600 dark:text-slate-400 mt-6 mb-10 max-w-[500px] mx-auto font-medium leading-relaxed">
+                  <p className="text-base md:text-lg text-slate-600 dark:text-slate-400 mt-4 md:mt-6 mb-6 md:mb-8 max-w-[500px] mx-auto font-medium leading-relaxed">
                     Upload a CSV to begin analysis — your AI analyst will profile it,
                     surface key trends, and build an interactive executive dashboard in seconds.
                   </p>
 
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="inline-flex items-center gap-3 px-8 py-4 bg-[#ff5a1f] text-white font-semibold text-lg rounded-xl hover:bg-[#e04812] transition-colors shadow-[0_8px_20px_rgba(255,90,31,0.25)] hover:shadow-[0_12px_24px_rgba(255,90,31,0.3)] hover:-translate-y-0.5 active:translate-y-0 duration-200"
+                    className="inline-flex items-center gap-3 px-6 py-3 md:px-8 md:py-4 bg-[#ff5a1f] text-white font-semibold md:text-lg rounded-xl hover:bg-[#e04812] transition-colors shadow-[0_8px_20px_rgba(255,90,31,0.25)] hover:shadow-[0_12px_24px_rgba(255,90,31,0.3)] hover:-translate-y-0.5 active:translate-y-0 duration-200"
                   >
-                    <Upload className="w-5 h-5" strokeWidth={2.5} />
+                    <Upload className="w-4 h-4 md:w-5 md:h-5" strokeWidth={2.5} />
                     Analyze Dataset
                   </button>
 
                   {/* Divider */}
-                  <div className="flex items-center gap-4 w-full max-w-[500px] mt-12 mb-8">
+                  <div className="flex items-center gap-4 w-full max-w-[500px] mt-8 mb-6">
                     <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1"></div>
-                    <span className="text-xs uppercase tracking-wider font-semibold text-slate-400">Or try a sample dataset</span>
+                    <span className="text-[10px] md:text-xs uppercase tracking-wider font-semibold text-slate-400">Or try a sample dataset</span>
                     <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1"></div>
                   </div>
 
