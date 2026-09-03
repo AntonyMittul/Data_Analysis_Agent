@@ -183,7 +183,7 @@ const KPICard = ({ title, value, subtitle, icon }: any) => {
     <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition">
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm text-slate-500">{title}</p>
-        <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+        <div className="w-9 h-9 rounded-lg bg-[#ff5a1f]/10 flex items-center justify-center text-[#ff5a1f] shrink-0">
           <Icon size={18} />
         </div>
       </div>
@@ -844,7 +844,7 @@ const handleChartClick = (chart: ChartData, event: any) => {
                 <>
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="flex items-center gap-2 px-4 py-2 bg-[#ff5a1f] text-white rounded-lg hover:bg-[#e04812] transition-colors"
                   >
                     <Upload className="w-4 h-4"/>
                     Analyze Dataset
@@ -859,7 +859,7 @@ const handleChartClick = (chart: ChartData, event: any) => {
 
                   <button
                     onClick={() => setShowSummaryModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-[#ff5a1f]/10 text-[#ff5a1f] rounded-lg hover:bg-[#ff5a1f]/20 transition-colors"
                     title="View AI Executive Summary"
                   >
                     <Sparkles className="w-4 h-4" />
@@ -869,7 +869,7 @@ const handleChartClick = (chart: ChartData, event: any) => {
                   <button
                     onClick={handleDownloadPdf}
                     disabled={isExporting}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-60"
+                    className="flex items-center gap-2 px-4 py-2 bg-[#ff5a1f] text-white rounded-lg hover:bg-[#e04812] disabled:opacity-60 transition-colors"
                     title="Generate a presentation-ready executive report (PDF)"
                   >
                     {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
@@ -1089,7 +1089,7 @@ const handleChartClick = (chart: ChartData, event: any) => {
               {datasetStats && (
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
                   <div className="flex items-center gap-2 mb-3">
-                    <Database size={16} className="text-blue-600" />
+                    <Database size={16} className="text-[#ff5a1f]" />
                     <h3 className="font-semibold text-slate-800">Dataset</h3>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4 text-sm">
@@ -1129,7 +1129,7 @@ const handleChartClick = (chart: ChartData, event: any) => {
                   <>
                     <button
                       onClick={() => setShowAdvanced((v) => !v)}
-                      className="mt-6 flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700"
+                      className="mt-6 flex items-center gap-2 text-sm font-semibold text-[#ff5a1f] hover:text-[#e04812]"
                     >
                       <ChevronDown
                         size={16}
@@ -1158,7 +1158,7 @@ const handleChartClick = (chart: ChartData, event: any) => {
 
           <button
             onClick={() => setIsChatOpen(!isChatOpen)}
-            className="fixed bottom-8 right-8 flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 transition-colors text-white rounded-full shadow-lg z-50"
+            className="fixed bottom-8 right-8 flex items-center gap-2 px-5 py-3 bg-[#ff5a1f] hover:bg-[#e04812] transition-colors text-white rounded-full shadow-lg z-50 hover:scale-105 active:scale-95 duration-200"
           >
             {isChatOpen ? <X className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
             <span className="font-medium text-sm">{isChatOpen ? "Close" : "Ask AI Analyst"}</span>
@@ -1185,7 +1185,7 @@ const handleChartClick = (chart: ChartData, event: any) => {
 
             <div className="flex items-center justify-between px-6 py-4 border-b bg-slate-50 border-slate-200">
               <div className="flex items-center gap-2">
-                <div className="bg-blue-600 p-1.5 rounded-md">
+                <div className="bg-[#ff5a1f] p-1.5 rounded-md">
                   <Sparkles size={18} className="text-white" />
                 </div>
                 <div>
@@ -1215,7 +1215,7 @@ const handleChartClick = (chart: ChartData, event: any) => {
                   <div
                     className={`max-w-[85%] rounded-2xl p-4 text-sm ${
                       message.role === "user"
-                        ? "bg-blue-600 text-white rounded-br-none"
+                        ? "bg-[#ff5a1f] text-white rounded-br-none"
                         : "bg-slate-100 text-slate-800 rounded-bl-none border border-slate-200"
                     }`}
                   >
@@ -1235,7 +1235,7 @@ const handleChartClick = (chart: ChartData, event: any) => {
                     key={q}
                     type="button"
                     onClick={() => sendMessage(q)}
-                    className="text-xs px-3 py-1.5 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-blue-300 transition-colors"
+                    className="text-xs px-3 py-1.5 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-[#ff5a1f]/40 transition-colors"
                   >
                     {q}
                   </button>
@@ -1252,12 +1252,12 @@ const handleChartClick = (chart: ChartData, event: any) => {
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   placeholder="Ask about your data..."
-                  className="flex-1 px-4 py-2 border border-slate-200 rounded-full bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="flex-1 px-4 py-2 border border-slate-200 rounded-full bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#ff5a1f] text-sm"
                 />
 
                 <button
                   type="submit"
-                  className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+                  className="p-2 bg-[#ff5a1f] text-white rounded-full hover:bg-[#e04812] transition-colors"
                 >
                   <Send className="w-5 h-5"/>
                 </button>
@@ -1369,7 +1369,7 @@ const handleChartClick = (chart: ChartData, event: any) => {
     <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-full overflow-hidden flex flex-col relative z-10 animate-in fade-in zoom-in-95 duration-200">
       <div className="flex items-center justify-between p-6 border-b border-slate-100">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-lg bg-[#ff5a1f]/10 text-[#ff5a1f] flex items-center justify-center shrink-0">
             <Sparkles size={20} />
           </div>
           <div>
@@ -1382,7 +1382,7 @@ const handleChartClick = (chart: ChartData, event: any) => {
             <button
               onClick={refreshSummary}
               disabled={refreshingSummary}
-              className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 disabled:opacity-60 transition-colors"
+              className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-[#ff5a1f]/10 text-[#ff5a1f] hover:bg-[#ff5a1f]/20 disabled:opacity-60 transition-colors"
               title="Regenerate the summary for the current filters"
             >
               {refreshingSummary ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />}
@@ -1406,7 +1406,7 @@ const handleChartClick = (chart: ChartData, event: any) => {
         )}
         
         {summaryReady ? (
-          <div className="prose max-w-none prose-slate prose-headings:text-slate-800 prose-a:text-indigo-600 hover:prose-a:text-indigo-500">
+          <div className="prose max-w-none prose-slate prose-headings:text-slate-800 prose-a:text-[#ff5a1f] hover:prose-a:text-[#e04812]">
             <Markdown>{dashboardInsights as string}</Markdown>
           </div>
         ) : (
