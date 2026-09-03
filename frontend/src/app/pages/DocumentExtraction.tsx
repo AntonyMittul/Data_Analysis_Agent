@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router";
 import {
   ArrowLeft,
+  ChevronRight,
   Send,
   FileText,
   Loader2,
@@ -76,7 +77,7 @@ function ProcessingState() {
   return (
     <div className="max-w-2xl mx-auto py-10">
       <div className="flex items-center gap-3 mb-6">
-        <Loader2 className="animate-spin text-violet-600" size={20} />
+        <Loader2 className="animate-spin text-[#ff5a1f]" size={20} />
         <p className="font-medium text-slate-700">Reading &amp; indexing your document…</p>
       </div>
       <div className="space-y-3 animate-pulse">
@@ -100,63 +101,122 @@ function DocEmptyState({
   onUpload: () => void;
 }) {
   return (
-    <div className="max-w-3xl mx-auto py-4">
-      <div className="text-center">
-        <div className="w-16 h-16 rounded-2xl bg-violet-100 text-violet-600 flex items-center justify-center mx-auto mb-4">
-          <FileText size={28} />
+    <div className="w-full max-w-[1200px] mx-auto py-4 relative">
+      
+      {/* Background Left Graphic */}
+      <div className="hidden lg:block absolute left-0 top-0 w-64 h-64 pointer-events-none opacity-40">
+        <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* Document Base */}
+          <rect x="20" y="20" width="120" height="160" rx="8" fill="white" stroke="#ff5a1f" strokeWidth="2" strokeDasharray="4 4" opacity="0.3"/>
+          <rect x="30" y="30" width="120" height="160" rx="8" fill="white" stroke="#ff5a1f" strokeWidth="2" strokeOpacity="0.5"/>
+          {/* Pie Chart */}
+          <circle cx="90" cy="80" r="25" fill="none" stroke="#ffcbb5" strokeWidth="12" />
+          <path d="M90 55 A 25 25 0 0 1 115 80 L90 80 Z" fill="#ff5a1f" />
+          {/* Bar Chart */}
+          <rect x="45" y="140" width="12" height="30" rx="2" fill="#ffcbb5" />
+          <rect x="65" y="120" width="12" height="50" rx="2" fill="#ff885c" />
+          <rect x="85" y="130" width="12" height="40" rx="2" fill="#ff5a1f" />
+          <rect x="105" y="100" width="12" height="70" rx="2" fill="#ffebd6" />
+          {/* Dots */}
+          <circle cx="160" cy="40" r="2" fill="#ff5a1f" opacity="0.4" />
+          <circle cx="170" cy="40" r="2" fill="#ff5a1f" opacity="0.4" />
+          <circle cx="180" cy="40" r="2" fill="#ff5a1f" opacity="0.4" />
+          <circle cx="160" cy="50" r="2" fill="#ff5a1f" opacity="0.4" />
+          <circle cx="170" cy="50" r="2" fill="#ff5a1f" opacity="0.4" />
+          <circle cx="180" cy="50" r="2" fill="#ff5a1f" opacity="0.4" />
+        </svg>
+      </div>
+
+      {/* Background Right Graphic */}
+      <div className="hidden lg:block absolute right-0 top-10 w-72 h-64 pointer-events-none opacity-40">
+        <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* Top Bubble */}
+          <rect x="80" y="20" width="100" height="60" rx="12" fill="white" stroke="#ff5a1f" strokeWidth="2" strokeOpacity="0.3" />
+          <path d="M120 80 L110 95 L130 80 Z" fill="white" stroke="#ff5a1f" strokeWidth="2" strokeOpacity="0.3" />
+          <rect x="95" y="40" width="70" height="6" rx="3" fill="#ffcbb5" />
+          <rect x="95" y="55" width="50" height="6" rx="3" fill="#ff5a1f" opacity="0.5" />
+          {/* Small Bubble */}
+          <rect x="130" y="90" width="50" height="40" rx="12" fill="#ff5a1f" />
+          <path d="M140 130 L135 140 L150 130 Z" fill="#ff5a1f" />
+          <circle cx="145" cy="110" r="2.5" fill="white" />
+          <circle cx="155" cy="110" r="2.5" fill="white" />
+          <circle cx="165" cy="110" r="2.5" fill="white" />
+          {/* Line Chart */}
+          <path d="M20 160 L60 140 L100 150 L140 100 L180 120" fill="none" stroke="#ffcbb5" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M20 160 L60 140 L100 150 L140 100 L180 120 L180 180 L20 180 Z" fill="url(#grad)" opacity="0.3" />
+          <defs>
+            <linearGradient id="grad" x1="0" y1="100" x2="0" y2="180" gradientUnits="userSpaceOnUse">
+              <stop stopColor="#ff5a1f" stopOpacity="0.5" />
+              <stop offset="1" stopColor="#ff5a1f" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+
+      <div className="text-center relative z-10 max-w-2xl mx-auto">
+        <div className="w-12 h-12 rounded-xl bg-[#fff0eb] text-[#ff5a1f] flex items-center justify-center mx-auto mb-6">
+          <FileText size={24} />
         </div>
-        <h2 className="text-2xl font-bold text-slate-800">Chat with your documents</h2>
-        <p className="text-slate-500 mt-2 max-w-md mx-auto">
+        <h2 className="text-4xl font-bold text-slate-800 tracking-tight">
+          Chat with your <span className="text-[#ff5a1f]">documents</span>
+        </h2>
+        <p className="text-slate-500 mt-4 max-w-lg mx-auto font-medium">
           Upload a PDF, Word, Excel, CSV or text file and ask questions — answers come
           with cited sources. I can also help with general business, finance and sales topics.
         </p>
         <button
           onClick={onUpload}
-          className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+          className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-[#ff5a1f] text-white font-semibold rounded-xl hover:bg-[#e04812] transition-colors shadow-[0_8px_20px_rgba(255,90,31,0.25)] hover:shadow-[0_12px_24px_rgba(255,90,31,0.3)] hover:-translate-y-0.5 active:translate-y-0 duration-200"
         >
-          <Plus size={16} /> Upload a document
+          <Plus size={18} strokeWidth={2.5} /> Upload a document
         </button>
       </div>
 
-      <div className="mt-10">
-        <p className="text-xs uppercase tracking-wider text-slate-400 mb-3">Or try a sample document</p>
-        <div className="grid sm:grid-cols-2 gap-3">
+      <div className="mt-16 max-w-3xl mx-auto relative z-10">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-4">Or try a sample document</p>
+        <div className="grid sm:grid-cols-2 gap-4">
           {SAMPLE_DOCS.map((s) => (
             <button
               key={s.name}
               onClick={() => onUseSample(s.name, s.label)}
-              className="text-left p-4 rounded-xl border border-slate-200 bg-white hover:border-violet-400 hover:shadow-sm transition-all"
+              className="text-left p-5 rounded-xl border border-slate-200 bg-white hover:border-[#ff5a1f]/50 hover:shadow-[0_4px_15px_rgba(0,0,0,0.05)] transition-all group flex items-start gap-4"
             >
-              <div className="flex items-center gap-2 font-semibold text-slate-800">
-                <FileText size={16} className="text-violet-600" /> {s.label}
+              <div className="w-10 h-10 rounded-lg bg-[#fff0eb] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <FileText size={20} className="text-[#ff5a1f]" />
               </div>
-              <p className="text-xs text-slate-500 mt-1">{s.desc}</p>
+              <div className="flex-1">
+                <div className="font-bold text-sm text-slate-800 group-hover:text-[#ff5a1f] transition-colors flex items-center justify-between">
+                  {s.label}
+                  <ChevronRight size={16} className="text-[#ff5a1f] opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
+                </div>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">{s.desc}</p>
+              </div>
             </button>
           ))}
         </div>
       </div>
 
-      <div className="mt-8">
-        <p className="text-xs uppercase tracking-wider text-slate-400 mb-3">What you can do</p>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="mt-10 max-w-3xl mx-auto relative z-10">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-4">What you can do</p>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {USE_CASES.map((u) => (
-            <div key={u.title} className="p-4 rounded-xl border border-slate-200 bg-white">
-              <u.Icon className="w-6 h-6 text-violet-600 mb-2" />
-              <p className="font-semibold text-slate-800 text-sm">{u.title}</p>
-              <p className="text-xs text-slate-500 mt-0.5">{u.desc}</p>
+            <div key={u.title} className="p-5 rounded-xl border border-slate-200 bg-white hover:shadow-sm transition-shadow">
+              <u.Icon className="w-6 h-6 text-[#ff5a1f] mb-3" strokeWidth={2.5} />
+              <p className="font-bold text-slate-800 text-sm mb-1">{u.title}</p>
+              <p className="text-xs text-slate-500">{u.desc}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="mt-8">
-        <p className="text-xs uppercase tracking-wider text-slate-400 mb-3">Example questions</p>
+      <div className="mt-10 max-w-3xl mx-auto relative z-10">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-4">Example questions</p>
         <div className="flex flex-wrap gap-2">
           {EXAMPLE_QUESTIONS.map((q) => (
             <button
               key={q}
               onClick={() => onExample(q)}
-              className="text-sm px-3 py-1.5 rounded-full border border-slate-200 text-slate-600 hover:bg-violet-50 hover:border-violet-300 transition-colors"
+              className="text-xs font-medium px-4 py-2 rounded-full border border-slate-200 text-slate-600 hover:bg-[#fff0eb] hover:text-[#ff5a1f] hover:border-[#ff5a1f]/30 transition-colors"
             >
               {q}
             </button>
@@ -478,7 +538,7 @@ export function DocumentExtraction() {
         <div className="ml-auto flex items-center gap-2">
           {uploadedFile && (
             <div
-              className="flex items-center gap-2 text-sm font-medium text-violet-600 bg-violet-50 px-3 py-1 rounded-full cursor-pointer hover:bg-violet-100 transition"
+              className="flex items-center gap-2 text-sm font-medium text-[#ff5a1f] bg-[#fff0eb] px-3 py-1 rounded-full cursor-pointer hover:bg-[#ffe4d6] transition"
               onClick={() => setShowPdf(prev => !prev)} // toggle the document viewer
             >
               <FileText size={16} />
@@ -500,7 +560,7 @@ export function DocumentExtraction() {
             <div className="p-3 border-b border-slate-200 space-y-3">
               <button
                 onClick={startNewChat}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 text-sm font-medium"
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[#ff5a1f] text-white rounded-lg hover:bg-[#e04812] text-sm font-medium"
               >
                 <Plus size={16} /> New Chat
               </button>
@@ -510,7 +570,7 @@ export function DocumentExtraction() {
                   value={chatSearch}
                   onChange={(e) => setChatSearch(e.target.value)}
                   placeholder="Search chats..."
-                  className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5a1f]"
                 />
               </div>
             </div>
@@ -527,7 +587,7 @@ export function DocumentExtraction() {
                     onClick={() => loadChat(s.session_id)}
                     className={`group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-sm ${
                       s.session_id === sessionId
-                        ? "bg-violet-50 text-violet-700"
+                        ? "bg-[#fff0eb] text-[#e04812]"
                         : "hover:bg-slate-100 text-slate-700"
                     }`}
                   >
@@ -572,7 +632,7 @@ export function DocumentExtraction() {
                 <div
                   className={`max-w-[80%] rounded-2xl px-5 py-3 shadow-sm transition-all
                   ${message.role === "user"
-                    ? "bg-violet-600 text-white rounded-tr-none"
+                    ? "bg-[#ff5a1f] text-white rounded-tr-none"
                     : "bg-white border border-slate-200 text-slate-800 rounded-tl-none"}`}
                 >
                   {message.hasDocument && (
@@ -607,12 +667,12 @@ export function DocumentExtraction() {
                           <button
                             key={ci}
                             onClick={() => jumpToCitation(c)}
-                            className="block w-full text-left rounded-lg border border-slate-200 bg-slate-50 hover:bg-violet-50 hover:border-violet-300 transition-colors p-2"
+                            className="block w-full text-left rounded-lg border border-slate-200 bg-slate-50 hover:bg-[#fff0eb] hover:border-[#ff5a1f]/30 transition-colors p-2"
                             title={c.page ? `Jump to page ${c.page}` : "Open document"}
                           >
-                            <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-violet-700">
+                            <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-[#e04812]">
                               {c.page && (
-                                <span className="px-2 py-0.5 rounded-full bg-violet-100">Page {c.page}</span>
+                                <span className="px-2 py-0.5 rounded-full bg-[#ffe4d6]">Page {c.page}</span>
                               )}
                               {c.heading && <span className="text-slate-600 truncate max-w-[220px]">{c.heading}</span>}
                               {c.refs && c.refs.map((r) => (
@@ -648,7 +708,7 @@ export function DocumentExtraction() {
             ) : isTabular(uploadedFile.name) ? (
               <div className="h-full flex flex-col">
                 <div className="px-4 py-3 border-b border-slate-200 flex items-center gap-2">
-                  <FileText size={16} className="text-violet-600 shrink-0" />
+                  <FileText size={16} className="text-[#ff5a1f] shrink-0" />
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-slate-800 truncate">{uploadedFile.name}</p>
                     <p className="text-xs text-slate-400">
@@ -693,7 +753,7 @@ export function DocumentExtraction() {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full p-8 text-center text-slate-500">
-                <FileText size={48} className="mb-4 text-violet-400" />
+                <FileText size={48} className="mb-4 text-[#ff5a1f]/60" />
                 <p className="font-medium text-slate-700">{uploadedFile.name}</p>
                 <p className="text-sm mt-2">
                   Inline preview isn't available for this file type, but its
@@ -717,7 +777,7 @@ export function DocumentExtraction() {
                   type="button"
                   disabled={isStreaming}
                   onClick={() => sendQuestion(a.prompt)}
-                  className="text-xs px-3 py-1.5 rounded-full border border-violet-200 text-violet-700 bg-violet-50 hover:bg-violet-100 disabled:opacity-50 transition-colors"
+                  className="text-xs px-3 py-1.5 rounded-full border border-[#ff5a1f]/20 text-[#e04812] bg-[#fff0eb] hover:bg-[#ffe4d6] disabled:opacity-50 transition-colors"
                 >
                   {a.label}
                 </button>
@@ -740,7 +800,7 @@ export function DocumentExtraction() {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isProcessing}
                 title="Upload document"
-                className="absolute left-2 top-1/2 -translate-y-1/2 p-2 text-slate-500 hover:text-violet-600 hover:bg-violet-100 rounded-lg transition-colors disabled:opacity-50"
+                className="absolute left-2 top-1/2 -translate-y-1/2 p-2 text-slate-500 hover:text-[#ff5a1f] hover:bg-[#ffe4d6] rounded-lg transition-colors disabled:opacity-50"
               >
                 {isProcessing ? <Loader2 className="animate-spin" size={20} /> : <Plus size={20} />}
               </button>
@@ -751,14 +811,14 @@ export function DocumentExtraction() {
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={uploadedFile ? "Ask a specific question..." : "Ask anything or upload a document..."}
                 disabled={isStreaming}
-                className="w-full bg-slate-100 border-none rounded-2xl pl-12 pr-5 py-3 focus:ring-2 focus:ring-violet-500 outline-none transition-all disabled:opacity-50"
+                className="w-full bg-slate-100 border-none rounded-2xl pl-12 pr-5 py-3 focus:ring-2 focus:ring-[#ff5a1f] outline-none transition-all disabled:opacity-50"
               />
             </div>
 
             <button
               type="submit"
               disabled={!input.trim() || isStreaming}
-              className="bg-violet-600 hover:bg-violet-700 disabled:bg-slate-300 text-white p-3 rounded-2xl shadow-md transition-all"
+              className="bg-[#ff5a1f] hover:bg-[#e04812] disabled:bg-slate-300 text-white p-3 rounded-2xl shadow-md transition-all"
             >
               <Send size={20} />
             </button>
