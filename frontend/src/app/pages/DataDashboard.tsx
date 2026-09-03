@@ -115,16 +115,19 @@ const renderMessageContent = (content: string) => {
 };
 
 const LOADING_STEPS = [
-  "Uploading dataset",
-  "Identifying inconsistencies",
-  "Cleaning & preprocessing",
-  "Generating visuals",
+  "Uploading and parsing dataset",
+  "Profiling data distributions",
+  "Identifying missing values & anomalies",
+  "Running statistical correlations",
+  "Structuring executive dashboard",
+  "Generating intelligent visualizations",
+  "Finalizing AI insights",
 ];
 
 const LoadingSequence = ({ step }: { step: number }) => (
   <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 max-w-md mx-auto mt-10 animate-in fade-in duration-300">
     <div className="flex items-center gap-3 mb-6">
-      <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+      <Loader2 className="w-6 h-6 text-[#ff5a1f] animate-spin" />
       <h3 className="text-lg font-semibold text-slate-800">Analyzing your dataset…</h3>
     </div>
     <div className="space-y-4">
@@ -136,9 +139,9 @@ const LoadingSequence = ({ step }: { step: number }) => (
             <span
               className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold transition-colors ${
                 done
-                  ? "bg-green-500 text-white"
+                  ? "bg-[#ff5a1f] text-white"
                   : active
-                  ? "bg-blue-100 text-blue-600"
+                  ? "bg-[#fff0eb] text-[#ff5a1f]"
                   : "bg-slate-100 text-slate-400"
               }`}
             >
@@ -158,7 +161,7 @@ const LoadingSequence = ({ step }: { step: number }) => (
     </div>
     <div className="mt-6 h-1.5 bg-slate-100 rounded-full overflow-hidden">
       <div
-        className="h-full bg-blue-600 transition-all duration-500 ease-out"
+        className="h-full bg-[#ff5a1f] transition-all duration-500 ease-out"
         style={{ width: `${((step + 1) / LOADING_STEPS.length) * 100}%` }}
       />
     </div>
@@ -231,7 +234,7 @@ export function DataDashboard() {
     setLoadingStep(0);
     const id = setInterval(() => {
       setLoadingStep((s) => (s < LOADING_STEPS.length - 1 ? s + 1 : s));
-    }, 1100);
+    }, 1800);
     return () => clearInterval(id);
   }, [isLoading]);
 
