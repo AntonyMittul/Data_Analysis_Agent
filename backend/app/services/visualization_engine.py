@@ -159,7 +159,7 @@ def _pie_category_share(df, cat):
                  color_discrete_sequence=px.colors.qualitative.Pastel)
     fig.update_traces(textposition="inside", textinfo="percent+label")
     fig.update_layout(template=TEMPLATE)
-    return {"title": f"{cat} share", "figure": _fig_json(fig), "category": cat}
+    return {"title": f"{cat} share", "figure": _fig_json(fig), "category": cat, "recipe": {"type": "pie", "cat": cat}}
 
 
 def _bar_measure_by_category(df, measure, cat):
@@ -173,7 +173,7 @@ def _bar_measure_by_category(df, measure, cat):
                  color_discrete_sequence=QUAL)
     fig.update_layout(template=TEMPLATE, xaxis_tickangle=-30,
                       showlegend=False, margin=dict(b=110))
-    return {"title": title, "figure": _fig_json(fig), "category": cat}
+    return {"title": title, "figure": _fig_json(fig), "category": cat, "recipe": {"type": "bar", "measure": measure, "cat": cat}}
 
 
 def _line_trend(df, measure, tcol, is_year):
@@ -218,7 +218,7 @@ def _line_trend(df, measure, tcol, is_year):
             pass
 
     fig.update_layout(template=TEMPLATE)
-    return {"title": title, "figure": _fig_json(fig)}
+    return {"title": title, "figure": _fig_json(fig), "recipe": {"type": "line", "measure": measure, "tcol": tcol, "is_year": is_year}}
 
 
 def _histogram(df, measure):
@@ -232,7 +232,7 @@ def _histogram(df, measure):
                  color_discrete_sequence=["#6366f1"])
     fig.update_layout(template=TEMPLATE, bargap=0.04,
                       xaxis_title=measure, yaxis_title="count")
-    return {"title": f"Distribution of {measure}", "figure": _fig_json(fig)}
+    return {"title": f"Distribution of {measure}", "figure": _fig_json(fig), "recipe": {"type": "histogram", "measure": measure}}
 
 
 def _correlation_heatmap(df, measures):
@@ -244,7 +244,7 @@ def _correlation_heatmap(df, measures):
                     color_continuous_scale="RdBu_r", zmin=-1, zmax=1,
                     title="Correlation between numeric columns")
     fig.update_layout(template=TEMPLATE)
-    return {"title": "Correlation between numeric columns", "figure": _fig_json(fig)}
+    return {"title": "Correlation between numeric columns", "figure": _fig_json(fig), "recipe": {"type": "heatmap", "measures": measures}}
 
 
 def _scatter(df, m1, m2, color_cat=None):
@@ -258,7 +258,7 @@ def _scatter(df, m1, m2, color_cat=None):
     fig = px.scatter(d, x=m1, y=m2, color=color_cat, opacity=0.55,
                      title=title, color_discrete_sequence=QUAL)
     fig.update_layout(template=TEMPLATE)
-    return {"title": title, "figure": _fig_json(fig)}
+    return {"title": title, "figure": _fig_json(fig), "recipe": {"type": "scatter", "m1": m1, "m2": m2, "color_cat": color_cat}}
 
 
 def _geo_map(df, geo, measure):
@@ -268,7 +268,7 @@ def _geo_map(df, geo, measure):
                         color=measure, color_continuous_scale="Blues",
                         title=f"{measure} by {geo}")
     fig.update_layout(template=TEMPLATE)
-    return {"title": f"{measure} by {geo} (Map)", "figure": _fig_json(fig)}
+    return {"title": f"{measure} by {geo} (Map)", "figure": _fig_json(fig), "recipe": {"type": "geo", "geo": geo, "measure": measure}}
 
 
 # ===============================
@@ -455,3 +455,25 @@ def apply_filters(df: pd.DataFrame, spec: dict):
             s = pd.to_numeric(out[col], errors="coerce")
             out = out[(s >= rng[0]) & (s <= rng[1])]
     return out
+
+
+def build_chart_from_recipe(df: pd.DataFrame, recipe: dict):
+    """Rebuilds a specific chart from its recipe."""
+    df = preprocess_data(df)
+    t = recipe.get("type")
+    
+    if t == "pie":
+        return _pie_category_share(df, recipe["cat"])
+    elif t == "bar":
+        return _bar_measure_by_category(df, recipe["measure"], recipe["cat"])
+    elif t == "line":
+        return _line_trend(df, recipe["measure"], recipe["tcol"], recipe["is_year"])
+    elif t == "histogram":
+        return _histogram(df, recipe["measure"])
+    elif t == "heatmap":
+        return _correlation_heatmap(df, recipe["measures"])
+    elif t == "scatter":
+        return _scatter(df, recipe["m1"], recipe["m2"], recipe.get("color_cat"))
+    elif t == "geo":
+        return _geo_map(df, recipe["geo"], recipe["measure"])
+    return None

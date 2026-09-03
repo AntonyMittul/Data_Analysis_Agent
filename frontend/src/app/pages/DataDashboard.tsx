@@ -38,6 +38,7 @@ interface ChartData {
   data: any[];
   layout: any;
   category?: string; // column used on the x-axis (enables click-to-filter drill-down)
+  recipe?: any;
 
   // ADD THIS
   prediction?: {
@@ -195,12 +196,15 @@ const KPICard = ({ title, value, subtitle, icon }: any) => {
   );
 };
 
-const ChartCard = ({ title, children, onClick }: any) => (
+const ChartCard = ({ title, children, onClick, action }: any) => (
   <div
     onClick={onClick}
-    className="bg-white p-5 rounded-xl shadow-sm border cursor-pointer hover:shadow-md transition"
+    className="bg-white p-5 rounded-xl shadow-sm border cursor-pointer hover:shadow-md transition relative group"
   >
-    <h3 className="text-lg font-semibold mb-4">{title}</h3>
+    <div className="flex justify-between items-start mb-4">
+      <h3 className="text-lg font-semibold">{title}</h3>
+      {action && <div onClick={(e) => e.stopPropagation()}>{action}</div>}
+    </div>
     {children}
   </div>
 );
@@ -248,6 +252,92 @@ export function DataDashboard() {
   const [isFiltering, setIsFiltering] = useState(false);
   const [summaryStale, setSummaryStale] = useState(false);
   const [refreshingSummary, setRefreshingSummary] = useState(false);
+
+  // Per-chart filters
+  const [chartFilters, setChartFilters] = useState<Record<number, Record<string, string>>>({});
+  const [openChartFilter, setOpenChartFilter] = useState<number | null>(null);
+
+  const applyChartFilter = async (idx: number, chart: ChartData, nextFilters: Record<string, string>) => {
+    setChartFilters(prev => ({ ...prev, [idx]: nextFilters }));
+    if (!filePath || !chart.recipe) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/analyze/chart`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          file_path: filePath,
+          recipe: chart.recipe,
+          filters: nextFilters
+        })
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        setChartData(prev => {
+          const next = [...prev];
+          next[idx] = data.chart;
+          return next;
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const renderChartFilter = (chart: ChartData, idx: number) => {
+    if (!filterOptions || !filterOptions.categorical || !chart.recipe) return null;
+    const activeFilters = chartFilters[idx] || {};
+    const isOpen = openChartFilter === idx;
+    
+    return (
+      <div className="relative z-20">
+        <button 
+          onClick={() => setOpenChartFilter(isOpen ? null : idx)}
+          className={`p-1.5 rounded transition-colors ${isOpen ? 'bg-[#ff5a1f] text-white' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+          title="Filter this visual"
+        >
+          <Filter size={16} />
+        </button>
+        {isOpen && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setOpenChartFilter(null)} />
+            <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-xl z-20 p-4 text-sm" onClick={(e) => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
+                <span className="font-semibold text-slate-800">Filter Visual</span>
+                {(Object.keys(activeFilters).length > 0) && (
+                  <button onClick={() => applyChartFilter(idx, chart, {})} className="text-[10px] text-red-500 hover:underline">Clear</button>
+                )}
+              </div>
+              <div className="space-y-3 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+                {Object.entries(filterOptions.categorical).map(([col, vals]: any) => (
+                  <div key={col}>
+                    <label className="text-[11px] uppercase text-slate-500 font-bold mb-1 block truncate" title={col.replace(/_/g, " ")}>{col.replace(/_/g, " ")}</label>
+                    <select
+                      className="w-full text-sm bg-slate-50 border border-slate-200 rounded-lg p-2 focus:outline-none focus:border-[#ff5a1f] focus:ring-1 focus:ring-[#ff5a1f] transition-all"
+                      value={activeFilters[col] || "All"}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const next = { ...activeFilters };
+                        if (!val || val === "All") delete next[col];
+                        else next[col] = val;
+                        applyChartFilter(idx, chart, next);
+                      }}
+                    >
+                      <option value="All">All</option>
+                      {vals.map((v: string) => (
+                        <option key={v} value={v}>{v}</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
   const [evalResult, setEvalResult] = useState<any>(null);
   const [selectedChart, setSelectedChart] = useState<ChartData | null>(null);
   const [showDataModal, setShowDataModal] = useState(false);
@@ -670,6 +760,7 @@ const handleChartClick = (chart: ChartData, event: any) => {
       key={idx}
       title={chart.title}
       onClick={chart.category ? undefined : () => setSelectedChart(chart)}
+      action={renderChartFilter(chart, idx)}
     >
       <Plot
         data={[
@@ -1010,71 +1101,6 @@ const handleChartClick = (chart: ChartData, event: any) => {
                 signature={`${chartData.length}-${(dashboardInsights || "").length}-${summaryReady}`}
                 onResult={setEvalResult}
               />
-
-              {/* Global Filters */}
-              {filterOptions &&
-                (Object.keys(filterOptions.categorical || {}).length > 0 ||
-                  Object.keys(filterOptions.ranges || {}).length > 0) && (
-                  <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 flex flex-wrap items-end gap-4">
-                    <div className="flex items-center gap-2 text-slate-700 font-semibold text-sm">
-                      <Filter size={16} /> Filters
-                      {isFiltering && <Loader2 size={14} className="animate-spin text-indigo-600" />}
-                    </div>
-
-                    {Object.entries(filterOptions.categorical || {}).map(([col, vals]: any) => (
-                      <div key={col} className="flex flex-col">
-                        <label className="text-xs text-slate-400 mb-1 capitalize">
-                          {col.replace(/_/g, " ")}
-                        </label>
-                        <select
-                          value={filters[col] || ""}
-                          onChange={(e) => setCategoricalFilter(col, e.target.value)}
-                          className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-[140px]"
-                        >
-                          <option value="">All</option>
-                          {(vals as string[]).map((v) => (
-                            <option key={v} value={v}>{v}</option>
-                          ))}
-                        </select>
-                      </div>
-                    ))}
-
-                    {Object.entries(filterOptions.ranges || {}).map(([col, r]: any) => {
-                      const cur = ranges[col] || [r.min, r.max];
-                      return (
-                        <div key={col} className="flex flex-col">
-                          <label className="text-xs text-slate-400 mb-1 capitalize">
-                            {col.replace(/_/g, " ")} ({cur[0]}–{cur[1]})
-                          </label>
-                          <div className="flex items-center gap-1">
-                            <input
-                              type="number" min={r.min} max={r.max} value={cur[0]}
-                              onChange={(e) => setRanges({ ...ranges, [col]: [Number(e.target.value), cur[1]] })}
-                              onBlur={() => applyFilters(filters, ranges)}
-                              className="w-20 text-sm border border-slate-200 rounded-lg px-2 py-2 bg-slate-50"
-                            />
-                            <span className="text-slate-400">–</span>
-                            <input
-                              type="number" min={r.min} max={r.max} value={cur[1]}
-                              onChange={(e) => setRanges({ ...ranges, [col]: [cur[0], Number(e.target.value)] })}
-                              onBlur={() => applyFilters(filters, ranges)}
-                              className="w-20 text-sm border border-slate-200 rounded-lg px-2 py-2 bg-slate-50"
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-
-                    {(Object.keys(filters).length > 0 || Object.keys(ranges).length > 0) && (
-                      <button
-                        onClick={clearFilters}
-                        className="text-sm text-slate-500 hover:text-red-500 flex items-center gap-1 ml-auto"
-                      >
-                        <X size={14} /> Clear filters
-                      </button>
-                    )}
-                  </div>
-                )}
 
               {/* Dynamic KPIs Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

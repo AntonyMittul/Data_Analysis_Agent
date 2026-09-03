@@ -11,8 +11,17 @@ from app.services.visualization_engine import (
     build_kpi_cards,
     build_filter_options,
     apply_filters,
+    build_chart_from_recipe,
 )
 from app.services.insight_generator import generate_insights
+from pydantic import BaseModel
+from typing import Dict, Any, Optional
+
+class ChartFilterRequest(BaseModel):
+    file_path: str
+    recipe: Dict[str, Any]
+    filters: Optional[Dict[str, str]] = None
+    ranges: Optional[Dict[str, list]] = None
 
 router = APIRouter()
 
@@ -121,6 +130,22 @@ def analyze_dataset(file_path: str, filters: str = None, with_insights: bool = T
             "dataset_stats": {},
             "message": "Failed to process dataset"
         }
+
+
+@router.post("/analyze/chart")
+def reanalyze_single_chart(req: ChartFilterRequest):
+    try:
+        df_full, _ = load_dataset(req.file_path, return_quality=True)
+        spec = {"filters": req.filters, "ranges": req.ranges}
+        df = apply_filters(df_full, spec) if (req.filters or req.ranges) else df_full
+        if len(df) == 0:
+            df = df_full
+        
+        chart = build_chart_from_recipe(df, req.recipe)
+        return {"status": "success", "chart": chart}
+    except Exception as e:
+        print("[CHART FILTER ERROR]:", e)
+        return {"status": "error", "message": str(e)}
 
 
 @router.get("/insights")
