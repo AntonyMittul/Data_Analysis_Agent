@@ -198,13 +198,15 @@ const KPICard = ({ title, value, subtitle, icon }: any) => {
 const ChartCard = ({ title, children, onClick, action }: any) => (
   <div
     onClick={onClick}
-    className="bg-white p-5 rounded-xl shadow-sm border cursor-pointer hover:shadow-md transition relative group"
+    className="bg-white p-4 rounded-xl shadow-sm border cursor-pointer hover:shadow-md transition relative group flex flex-col h-full overflow-hidden"
   >
-    <div className="flex justify-between items-start mb-4">
-      <h3 className="text-lg font-semibold">{title}</h3>
+    <div className="flex justify-between items-start mb-2 shrink-0">
+      <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
       {action && <div onClick={(e) => e.stopPropagation()}>{action}</div>}
     </div>
-    {children}
+    <div className="flex-1 min-h-0 w-full relative flex items-center justify-center">
+      {children}
+    </div>
   </div>
 );
 
@@ -790,20 +792,13 @@ const handleChartClick = (chart: ChartData, event: any) => {
           ...themedPlotLayout,
           title: "",
           autosize: true,
-          height: 400,
-          width: undefined,
-          margin: { l: 50, r: 20, t: 20, b: 50 },
+          margin: { l: 40, r: 20, t: 10, b: 30 },
         }}
         useResizeHandler={true}
         onClick={chart.category ? (e: any) => handleChartClick(chart, e) : undefined}
-        style={{ width: "100%", height: "400px" }}
+        style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }}
         config={{ responsive: true, displayModeBar: false }}
       />
-      {chart.category && (
-        <p className="text-xs text-slate-400 mt-1">
-          Tip: click a bar to filter by {chart.category.replace(/_/g, " ")}
-        </p>
-      )}
     </ChartCard>
   );
 
@@ -811,10 +806,10 @@ const handleChartClick = (chart: ChartData, event: any) => {
 
   return (
 
-    <div className="min-h-screen bg-slate-50 flex flex-col overflow-hidden relative">
+    <div className="h-screen w-screen bg-slate-50 flex flex-col overflow-hidden relative">
 
       {/* MAIN CONTENT AREA */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
         
         {/* HEADER */}
         <header className="bg-white border-b border-slate-200 shrink-0">
@@ -892,8 +887,8 @@ const handleChartClick = (chart: ChartData, event: any) => {
         </header>
 
 
-        {/* SCROLLABLE MAIN BODY */}
-        <main className={`flex-1 overflow-y-auto ${(!uploadedFile && !isLoading) ? 'p-0 flex flex-col' : 'p-6 lg:p-8'}`}>
+        {/* MAIN BODY */}
+        <main className={`flex-1 flex flex-col ${(!uploadedFile && !isLoading) ? 'overflow-y-auto p-0' : 'overflow-hidden min-h-0 p-4 lg:p-6 gap-4 lg:gap-6'}`}>
 
           {!uploadedFile && !isLoading && (
 
@@ -1083,18 +1078,22 @@ const handleChartClick = (chart: ChartData, event: any) => {
           {/* DYNAMIC DASHBOARD */}
 
           {chartData.length > 0 && (
-            <div className="space-y-6 animate-in fade-in duration-500 w-full">
+            <div className="space-y-6 animate-in fade-in duration-500 w-full flex-1 min-h-0 flex flex-col">
 
               {/* Dataset metadata */}
               {datasetStats && (
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Database size={16} className="text-blue-600" />
-                    <h3 className="font-semibold text-slate-800">Dataset</h3>
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 shrink-0 flex flex-row items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-[#ff5a1f]/10 text-[#ff5a1f] flex items-center justify-center shrink-0">
+                      <Database size={20} />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-800 text-sm leading-tight">Dataset</h3>
+                      <p className="text-[11px] text-slate-500">{datasetStats.file_name}</p>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4 text-sm">
+                  <div className="flex items-center gap-8 text-sm px-6 overflow-hidden">
                     {[
-                      { label: "Name", value: datasetStats.file_name },
                       { label: "Rows", value: Number(datasetStats.rows || 0).toLocaleString() },
                       { label: "Columns", value: datasetStats.columns },
                       { label: "Size", value: formatSize(datasetStats.size_kb) },
@@ -1102,49 +1101,27 @@ const handleChartClick = (chart: ChartData, event: any) => {
                       { label: "Uploaded", value: uploadedAt || "—" },
                       { label: "Last Analyzed", value: lastAnalyzedAt || "—" },
                     ].map((m) => (
-                      <div key={m.label} className="min-w-0">
-                        <p className="text-xs text-slate-400">{m.label}</p>
-                        <p className="font-semibold text-slate-800 truncate" title={String(m.value)}>
-                          {m.value}
-                        </p>
+                      <div key={m.label} className="flex flex-col min-w-0 shrink-0">
+                        <span className="text-[10px] uppercase text-slate-400 font-semibold mb-0.5">{m.label}</span>
+                        <span className="font-bold text-slate-700 text-xs">{m.value}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
-              {/* Dynamic KPIs Grid */}
 
-              {/* Key Visualizations */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 lg:p-8">
-                <div className="mb-6 border-b border-slate-100 pb-4">
-                  <h2 className="text-xl font-bold text-slate-800">Key Visualizations</h2>
-                  <p className="text-sm text-slate-500 mt-1">The most decision-relevant charts</p>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
-                  {primaryCharts.map((chart, idx) => renderChart(chart, idx))}
-                </div>
-
-                {advancedCharts.length > 0 && (
-                  <>
-                    <button
-                      onClick={() => setShowAdvanced((v) => !v)}
-                      className="mt-6 flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700"
-                    >
-                      <ChevronDown
-                        size={16}
-                        className={`transition-transform ${showAdvanced ? "rotate-180" : ""}`}
-                      />
-                      {showAdvanced ? "Hide" : "Show"} advanced analytics ({advancedCharts.length})
-                    </button>
-
-                    {showAdvanced && (
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full mt-6 animate-in fade-in duration-300">
-                        {advancedCharts.map((chart, idx) => renderChart(chart, idx + primaryCharts.length))}
-                      </div>
-                    )}
-                  </>
-                )}
+              {/* Key Visualizations Grid */}
+              <div className="flex-1 min-h-0 grid grid-cols-12 grid-rows-2 gap-4 lg:gap-6 w-full">
+                {chartData.slice(0, 4).map((chart, idx) => (
+                  <div key={`top-${idx}`} className="col-span-3 row-span-1 min-h-0">
+                    {renderChart(chart, idx)}
+                  </div>
+                ))}
+                {chartData.slice(4, 7).map((chart, idx) => (
+                  <div key={`bottom-${idx}`} className="col-span-4 row-span-1 min-h-0">
+                    {renderChart(chart, idx + 4)}
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -1158,10 +1135,10 @@ const handleChartClick = (chart: ChartData, event: any) => {
 
           <button
             onClick={() => setIsChatOpen(!isChatOpen)}
-            className="fixed bottom-8 right-8 flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 transition-colors text-white rounded-full shadow-lg z-50"
+            className="fixed bottom-8 right-8 flex items-center gap-2 px-5 py-3 bg-[#ff5a1f] hover:bg-[#e04812] transition-colors text-white rounded-full shadow-lg z-50 hover:scale-105 active:scale-95 duration-200"
           >
             {isChatOpen ? <X className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
-            <span className="font-medium text-sm">{isChatOpen ? "Close" : "Ask AI Analyst"}</span>
+            <span className="font-bold text-sm">{isChatOpen ? "Close" : "Ask AI Analyst"}</span>
           </button>
 
         )}
