@@ -30,7 +30,6 @@ import Markdown from "../components/Markdown";
 import { ThemeToggle, useTheme } from "../components/ThemeProvider";
 import { exportDashboardPdf } from "../lib/exportPdf";
 import { API_BASE } from "../lib/config";
-import EvalSummary from "../components/EvalSummary";
 
 // ================= TYPES =================
 interface ChartData {
@@ -347,9 +346,9 @@ export function DataDashboard() {
     );
   };
 
-  const [evalResult, setEvalResult] = useState<any>(null);
   const [selectedChart, setSelectedChart] = useState<ChartData | null>(null);
   const [showDataModal, setShowDataModal] = useState(false);
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [tableData, setTableData] = useState<any[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
   const API_URL = API_BASE;
@@ -859,6 +858,15 @@ const handleChartClick = (chart: ChartData, event: any) => {
                   </button>
 
                   <button
+                    onClick={() => setShowSummaryModal(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors"
+                    title="View AI Executive Summary"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    AI Executive Summary
+                  </button>
+
+                  <button
                     onClick={handleDownloadPdf}
                     disabled={isExporting}
                     className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-60"
@@ -1104,62 +1112,7 @@ const handleChartClick = (chart: ChartData, event: any) => {
                   </div>
                 </div>
               )}
-
-              {/* AI Evaluation scores (additive trust layer) */}
-              <EvalSummary
-                filePath={filePath}
-                signature={`${chartData.length}-${(dashboardInsights || "").length}-${summaryReady}`}
-                onResult={setEvalResult}
-              />
-
               {/* Dynamic KPIs Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {kpis.map((kpi, idx) => (
-                  <KPICard key={idx} {...kpi} />
-                ))}
-              </div>
-
-              {/* AI Executive Summary */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 lg:p-8">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                    <Sparkles size={18} />
-                  </div>
-                  <div className="flex-1">
-                    <h2 className="text-xl font-bold text-slate-800">AI Executive Summary</h2>
-                    <p className="text-sm text-slate-500">Key findings, risks, and recommended actions</p>
-                  </div>
-                  {summaryReady && (
-                    <button
-                      onClick={refreshSummary}
-                      disabled={refreshingSummary}
-                      className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60 shrink-0"
-                      title="Regenerate the summary for the current filters"
-                    >
-                      {refreshingSummary ? <Loader2 className="animate-spin" size={14} /> : <Sparkles size={14} />}
-                      {refreshingSummary ? "Refreshing…" : "Refresh summary"}
-                    </button>
-                  )}
-                </div>
-
-                {summaryStale && (
-                  <div className="mb-4 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                    Filters changed — this summary reflects the previous selection. Click <strong>Refresh summary</strong> to update it.
-                  </div>
-                )}
-                {summaryReady ? (
-                  <Markdown>{dashboardInsights as string}</Markdown>
-                ) : (
-                  <div className="space-y-2 animate-pulse">
-                    <div className="h-3 bg-slate-100 rounded w-3/4" />
-                    <div className="h-3 bg-slate-100 rounded w-full" />
-                    <div className="h-3 bg-slate-100 rounded w-5/6" />
-                    <p className="text-sm text-slate-400 pt-2 flex items-center gap-2">
-                      <Loader2 className="animate-spin" size={14} /> Generating your executive summary…
-                    </p>
-                  </div>
-                )}
-              </div>
 
               {/* Key Visualizations */}
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 lg:p-8">
@@ -1405,8 +1358,74 @@ const handleChartClick = (chart: ChartData, event: any) => {
     </div>
   </div>
 )}
-
     </div>
+
+{/* AI Executive Summary Modal */}
+{showSummaryModal && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm">
+    <div
+      className="absolute inset-0"
+      onClick={() => setShowSummaryModal(false)}
+    ></div>
+    <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-full overflow-hidden flex flex-col relative z-10 animate-in fade-in zoom-in-95 duration-200">
+      <div className="flex items-center justify-between p-6 border-b border-slate-100">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+            <Sparkles size={20} />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-slate-800">AI Executive Summary</h2>
+            <p className="text-sm text-slate-500">Key findings, risks, and recommended actions</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          {summaryReady && (
+            <button
+              onClick={refreshSummary}
+              disabled={refreshingSummary}
+              className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 disabled:opacity-60 transition-colors"
+              title="Regenerate the summary for the current filters"
+            >
+              {refreshingSummary ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />}
+              {refreshingSummary ? "Refreshing…" : "Refresh summary"}
+            </button>
+          )}
+          <button
+            onClick={() => setShowSummaryModal(false)}
+            className="text-slate-400 hover:text-slate-700 text-lg leading-none w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+      
+      <div className="p-6 overflow-y-auto custom-scrollbar">
+        {summaryStale && (
+          <div className="mb-6 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center gap-2">
+            <span className="font-semibold">Filters changed:</span> this summary reflects the previous selection. Click <strong>Refresh summary</strong> to update it.
+          </div>
+        )}
+        
+        {summaryReady ? (
+          <div className="prose max-w-none prose-slate prose-headings:text-slate-800 prose-a:text-indigo-600 hover:prose-a:text-indigo-500">
+            <Markdown>{dashboardInsights as string}</Markdown>
+          </div>
+        ) : (
+          <div className="space-y-4 animate-pulse">
+            <div className="h-4 bg-slate-100 rounded-full w-3/4" />
+            <div className="h-4 bg-slate-100 rounded-full w-full" />
+            <div className="h-4 bg-slate-100 rounded-full w-full" />
+            <div className="h-4 bg-slate-100 rounded-full w-5/6" />
+            <div className="pt-4 flex items-center gap-3 text-slate-500">
+              <Loader2 className="animate-spin" size={18} /> 
+              <span>Generating your executive summary…</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+)}
 
   );
 
