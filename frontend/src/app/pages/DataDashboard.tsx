@@ -745,7 +745,6 @@ const handleChartClick = (chart: ChartData, event: any) => {
         kpis,
         charts: chartData,
         insights: dashboardInsights,
-        evaluation: evalResult,
       });
     } catch (err) {
       console.error("PDF export failed:", err);
