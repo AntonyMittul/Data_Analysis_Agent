@@ -515,6 +515,7 @@ const runAnalysis = async (
           data: fig.data,
           layout: fig.layout || {},
           category: c.category,
+          recipe: c.recipe,
         };
       })
       .filter(Boolean);
