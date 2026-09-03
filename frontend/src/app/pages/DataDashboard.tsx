@@ -1358,7 +1358,6 @@ const handleChartClick = (chart: ChartData, event: any) => {
     </div>
   </div>
 )}
-    </div>
 
 {/* AI Executive Summary Modal */}
 {showSummaryModal && (
@@ -1426,7 +1425,7 @@ const handleChartClick = (chart: ChartData, event: any) => {
     </div>
   </div>
 )}
-
+    </div>
   );
 
 }
