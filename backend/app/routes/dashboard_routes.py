@@ -80,13 +80,13 @@ def analyze_dataset(file_path: str, filters: str = None, with_insights: bool = T
             "cards": build_kpi_cards(df, quality),
         }
 
-        # Generate charts and profile the data in parallel.
+        # Profile the dataset first to provide metadata to the visualization engine
+        profile = profile_dataset(df)
+        
+        # Generate dynamic visualizations based on the AI's understanding of the dataset profile
         with ThreadPoolExecutor() as executor:
-            future_charts = executor.submit(generate_visualizations, df)
-            future_profile = executor.submit(profile_dataset, df)
-
+            future_charts = executor.submit(generate_visualizations, df, profile)
             charts = future_charts.result()
-            profile = future_profile.result()
 
         # Build the structured-data context the data-chat agent will use.
         from app.agents.structured_agent import StructuredDataAgent

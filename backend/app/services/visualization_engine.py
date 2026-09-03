@@ -4,6 +4,9 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 
+from app.config.llm import get_llm
+from app.services.data_profiler import profile_dataset
+
 # ===============================
 # CONFIG
 # ===============================
@@ -274,48 +277,98 @@ def _geo_map(df, geo, measure):
 # ===============================
 # MAIN ENGINE
 # ===============================
-def generate_visualizations(df: pd.DataFrame):
+def generate_visualizations(df: pd.DataFrame, profile: dict = None):
     visuals = []
-
     df = preprocess_data(df)
+    
+    if profile is None:
+        profile = profile_dataset(df)
+    
     measures, categoricals, datetimes, years, ids = classify_columns(df)
+    geo_cols = [c for c in df.columns if {"country", "region", "nation", "state"} & _tokens(c)]
 
-    # Pick the most informative primary columns.
-    measures = sorted(measures, key=lambda c: df[c].nunique(), reverse=True)
-    categoricals = sorted(categoricals, key=lambda c: df[c].nunique())
-    time_cols = [(c, False) for c in datetimes] + [(c, True) for c in years]
+    prompt = f"""
+    You are an expert Data Analyst and Visualization designer.
+    Analyze the following dataset metadata and choose up to 7 of the most insightful charts to build.
+    
+    Dataset Profile:
+    {json.dumps(profile, indent=2)}
+    
+    Available time columns (years): {years}
+    Available datetime columns: {datetimes}
+    Available geographic columns: {geo_cols}
+    
+    Return a JSON array of "recipes" for the charts.
+    Supported recipe types and their required keys:
+    - {{"type": "pie", "cat": "COLUMN_NAME"}}
+    - {{"type": "bar", "measure": "COLUMN_NAME", "cat": "COLUMN_NAME"}}
+    - {{"type": "line", "measure": "COLUMN_NAME", "tcol": "TIME_COLUMN_NAME", "is_year": boolean}}
+    - {{"type": "histogram", "measure": "COLUMN_NAME"}}
+    - {{"type": "heatmap", "measures": ["COL1", "COL2", "COL3", ...]}} (Requires at least 3 numeric columns)
+    - {{"type": "scatter", "m1": "NUM_COL1", "m2": "NUM_COL2", "color_cat": "OPTIONAL_CAT_COL"}}
+    - {{"type": "geo", "geo": "GEO_COLUMN", "measure": "COLUMN_NAME"}}
+    
+    Select recipes that make sense for the available columns.
+    OUTPUT ONLY THE JSON ARRAY. NO MARKDOWN. NO EXPLANATION.
+    """
+    
+    try:
+        llm = get_llm(temperature=0.1)
+        response = llm.invoke(prompt)
+        # Parse the JSON output safely
+        clean_json = response.strip()
+        if clean_json.startswith("```json"):
+            clean_json = clean_json[7:]
+        if clean_json.startswith("```"):
+            clean_json = clean_json[3:]
+        if clean_json.endswith("```"):
+            clean_json = clean_json[:-3]
+            
+        recipes = json.loads(clean_json.strip())
+        
+        for recipe in recipes:
+            try:
+                chart = build_chart_from_recipe(df, recipe)
+                if chart:
+                    visuals.append(chart)
+            except Exception as e:
+                print(f"[LLM CHART BUILD ERROR for {recipe}]:", e)
+                
+    except Exception as e:
+        print("[LLM VISUALIZATION FAILURE]:", e)
+        # Fallback to hardcoded heuristics
+        measures = sorted(measures, key=lambda c: df[c].nunique(), reverse=True)
+        categoricals = sorted(categoricals, key=lambda c: df[c].nunique())
+        time_cols = [(c, False) for c in datetimes] + [(c, True) for c in years]
 
-    primary_measure = measures[0] if measures else None
-    primary_cat = categoricals[0] if categoricals else None
-    geo_cols = [c for c in df.columns
-                if {"country", "region", "nation", "state"} & _tokens(c)]
+        primary_measure = measures[0] if measures else None
+        primary_cat = categoricals[0] if categoricals else None
 
-    # Build a balanced set of charts; never let one failure kill the rest.
-    plan = []
-    if primary_cat:
-        plan.append(lambda: _bar_category_counts(df, primary_cat))
-        plan.append(lambda: _pie_category_share(df, primary_cat))
-    if primary_measure and primary_cat:
-        plan.append(lambda: _bar_measure_by_category(df, primary_measure, primary_cat))
-    if primary_measure and time_cols:
-        tcol, is_year = time_cols[0]
-        plan.append(lambda: _line_trend(df, primary_measure, tcol, is_year))
-    if primary_measure:
-        plan.append(lambda: _histogram(df, primary_measure))
-    if len(measures) >= 3:
-        plan.append(lambda: _correlation_heatmap(df, measures))
-    if len(measures) >= 2:
-        plan.append(lambda: _scatter(df, measures[0], measures[1], primary_cat))
-    if geo_cols and primary_measure:
-        plan.append(lambda: _geo_map(df, geo_cols[0], primary_measure))
+        plan = []
+        if primary_cat:
+            plan.append(lambda: _bar_category_counts(df, primary_cat))
+            plan.append(lambda: _pie_category_share(df, primary_cat))
+        if primary_measure and primary_cat:
+            plan.append(lambda: _bar_measure_by_category(df, primary_measure, primary_cat))
+        if primary_measure and time_cols:
+            tcol, is_year = time_cols[0]
+            plan.append(lambda: _line_trend(df, primary_measure, tcol, is_year))
+        if primary_measure:
+            plan.append(lambda: _histogram(df, primary_measure))
+        if len(measures) >= 3:
+            plan.append(lambda: _correlation_heatmap(df, measures))
+        if len(measures) >= 2:
+            plan.append(lambda: _scatter(df, measures[0], measures[1], primary_cat))
+        if geo_cols and primary_measure:
+            plan.append(lambda: _geo_map(df, geo_cols[0], primary_measure))
 
-    for build in plan:
-        try:
-            chart = build()
-            if chart:
-                visuals.append(chart)
-        except Exception as e:
-            print("[VISUAL BUILD ERROR]:", e)
+        for build in plan:
+            try:
+                chart = build()
+                if chart:
+                    visuals.append(chart)
+            except Exception as e:
+                print("[VISUAL BUILD ERROR]:", e)
 
     return visuals
 
