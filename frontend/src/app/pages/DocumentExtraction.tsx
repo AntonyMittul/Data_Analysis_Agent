@@ -154,26 +154,26 @@ function DocEmptyState({
       </div>
 
       <div className="text-center relative z-10 max-w-2xl mx-auto">
-        <div className="w-12 h-12 rounded-xl bg-[#fff0eb] text-[#ff5a1f] flex items-center justify-center mx-auto mb-6">
+        <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl bg-[#fff0eb] text-[#ff5a1f] flex items-center justify-center mx-auto mb-4 lg:mb-6">
           <FileText size={24} />
         </div>
-        <h2 className="text-4xl font-bold text-slate-800 tracking-tight">
+        <h2 className="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">
           Chat with your <span className="text-[#ff5a1f]">documents</span>
         </h2>
-        <p className="text-slate-500 mt-4 max-w-lg mx-auto font-medium">
+        <p className="text-sm lg:text-base text-slate-500 mt-3 lg:mt-4 max-w-lg mx-auto font-medium">
           Upload a PDF, Word, Excel, CSV or text file and ask questions — answers come
           with cited sources. I can also help with general business, finance and sales topics.
         </p>
         <button
           onClick={onUpload}
-          className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-[#ff5a1f] text-white font-semibold rounded-xl hover:bg-[#e04812] transition-colors shadow-[0_8px_20px_rgba(255,90,31,0.25)] hover:shadow-[0_12px_24px_rgba(255,90,31,0.3)] hover:-translate-y-0.5 active:translate-y-0 duration-200"
+          className="mt-4 lg:mt-6 inline-flex items-center gap-2 px-5 py-2.5 lg:px-6 lg:py-3 bg-[#ff5a1f] text-white font-semibold rounded-xl hover:bg-[#e04812] transition-colors shadow-[0_8px_20px_rgba(255,90,31,0.25)] hover:shadow-[0_12px_24px_rgba(255,90,31,0.3)] hover:-translate-y-0.5 active:translate-y-0 duration-200"
         >
           <Plus size={18} strokeWidth={2.5} /> Upload a document
         </button>
       </div>
 
-      <div className="mt-16 max-w-3xl mx-auto relative z-10">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-4">Or try a sample document</p>
+      <div className="mt-8 lg:mt-12 max-w-3xl mx-auto relative z-10 px-4">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3">Or try a sample document</p>
         <div className="grid sm:grid-cols-2 gap-4">
           {SAMPLE_DOCS.map((s) => (
             <button
@@ -196,21 +196,21 @@ function DocEmptyState({
         </div>
       </div>
 
-      <div className="mt-10 max-w-3xl mx-auto relative z-10">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-4">What you can do</p>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="mt-6 lg:mt-8 max-w-3xl mx-auto relative z-10 px-4">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3">What you can do</p>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
           {USE_CASES.map((u) => (
-            <div key={u.title} className="p-5 rounded-xl border border-slate-200 bg-white hover:shadow-sm transition-shadow">
-              <u.Icon className="w-6 h-6 text-[#ff5a1f] mb-3" strokeWidth={2.5} />
-              <p className="font-bold text-slate-800 text-sm mb-1">{u.title}</p>
-              <p className="text-xs text-slate-500">{u.desc}</p>
+            <div key={u.title} className="p-4 lg:p-5 rounded-xl border border-slate-200 bg-white hover:shadow-sm transition-shadow">
+              <u.Icon className="w-5 h-5 lg:w-6 lg:h-6 text-[#ff5a1f] mb-2 lg:mb-3" strokeWidth={2.5} />
+              <p className="font-bold text-slate-800 text-xs lg:text-sm mb-1">{u.title}</p>
+              <p className="text-[10px] lg:text-xs text-slate-500">{u.desc}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="mt-10 max-w-3xl mx-auto relative z-10">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-4">Example questions</p>
+      <div className="mt-6 lg:mt-8 max-w-3xl mx-auto relative z-10 px-4">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3">Example questions</p>
         <div className="flex flex-wrap gap-2">
           {EXAMPLE_QUESTIONS.map((q) => (
             <button
@@ -613,8 +613,8 @@ export function DocumentExtraction() {
         </aside>
 
         {/* CHAT */}
-        <main className="flex-1 overflow-y-auto px-6 py-8 transition-all">
-          <div className="max-w-4xl mx-auto space-y-6">
+        <main className={`flex-1 overflow-y-auto transition-all ${(!uploadedFile && messages.length <= 1 && !isProcessing) ? 'p-0 flex flex-col justify-center' : 'px-6 py-8'}`}>
+          <div className={`mx-auto ${(!uploadedFile && messages.length <= 1 && !isProcessing) ? 'w-full max-w-[1200px]' : 'max-w-4xl space-y-6'}`}>
             {isProcessing ? (
               <ProcessingState />
             ) : !uploadedFile && messages.length <= 1 ? (
