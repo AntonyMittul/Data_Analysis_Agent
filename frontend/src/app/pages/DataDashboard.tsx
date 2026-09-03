@@ -275,7 +275,16 @@ export function DataDashboard() {
       if (data.status === "success") {
         setChartData(prev => {
           const next = [...prev];
-          next[idx] = data.chart;
+          const c = data.chart;
+          if (c && c.figure) {
+            next[idx] = {
+              title: c.title || "Chart",
+              data: c.figure.data || [],
+              layout: c.figure.layout || {},
+              category: c.category,
+              recipe: c.recipe || chart.recipe,
+            };
+          }
           return next;
         });
       }
