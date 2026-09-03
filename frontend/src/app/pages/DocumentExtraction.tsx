@@ -153,70 +153,70 @@ function DocEmptyState({
         </svg>
       </div>
 
-      <div className="text-center relative z-10 max-w-2xl mx-auto">
-        <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl bg-[#fff0eb] text-[#ff5a1f] flex items-center justify-center mx-auto mb-4 lg:mb-6">
-          <FileText size={24} />
+      <div className="text-center relative z-10 max-w-2xl mx-auto mt-4">
+        <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl bg-[#fff0eb] text-[#ff5a1f] flex items-center justify-center mx-auto mb-3 lg:mb-4">
+          <FileText size={20} className="lg:w-6 lg:h-6" />
         </div>
-        <h2 className="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">
+        <h2 className="text-2xl lg:text-3xl font-bold text-slate-800 tracking-tight">
           Chat with your <span className="text-[#ff5a1f]">documents</span>
         </h2>
-        <p className="text-sm lg:text-base text-slate-500 mt-3 lg:mt-4 max-w-lg mx-auto font-medium">
+        <p className="text-[13px] lg:text-sm text-slate-500 mt-2 lg:mt-3 max-w-lg mx-auto font-medium">
           Upload a PDF, Word, Excel, CSV or text file and ask questions — answers come
           with cited sources. I can also help with general business, finance and sales topics.
         </p>
         <button
           onClick={onUpload}
-          className="mt-4 lg:mt-6 inline-flex items-center gap-2 px-5 py-2.5 lg:px-6 lg:py-3 bg-[#ff5a1f] text-white font-semibold rounded-xl hover:bg-[#e04812] transition-colors shadow-[0_8px_20px_rgba(255,90,31,0.25)] hover:shadow-[0_12px_24px_rgba(255,90,31,0.3)] hover:-translate-y-0.5 active:translate-y-0 duration-200"
+          className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 lg:px-6 lg:py-3 bg-[#ff5a1f] text-white text-sm font-semibold rounded-xl hover:bg-[#e04812] transition-colors shadow-[0_8px_20px_rgba(255,90,31,0.25)] hover:shadow-[0_12px_24px_rgba(255,90,31,0.3)] hover:-translate-y-0.5 active:translate-y-0 duration-200"
         >
-          <Plus size={18} strokeWidth={2.5} /> Upload a document
+          <Plus size={16} strokeWidth={2.5} /> Upload a document
         </button>
       </div>
 
-      <div className="mt-8 lg:mt-12 max-w-3xl mx-auto relative z-10 px-4">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3">Or try a sample document</p>
-        <div className="grid sm:grid-cols-2 gap-4">
+      <div className="mt-6 lg:mt-8 max-w-3xl mx-auto relative z-10 px-4">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Or try a sample document</p>
+        <div className="grid sm:grid-cols-2 gap-3 lg:gap-4">
           {SAMPLE_DOCS.map((s) => (
             <button
               key={s.name}
               onClick={() => onUseSample(s.name, s.label)}
-              className="text-left p-5 rounded-xl border border-slate-200 bg-white hover:border-[#ff5a1f]/50 hover:shadow-[0_4px_15px_rgba(0,0,0,0.05)] transition-all group flex items-start gap-4"
+              className="text-left p-4 rounded-xl border border-slate-200 bg-white hover:border-[#ff5a1f]/50 hover:shadow-[0_4px_15px_rgba(0,0,0,0.05)] transition-all group flex items-start gap-3"
             >
-              <div className="w-10 h-10 rounded-lg bg-[#fff0eb] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                <FileText size={20} className="text-[#ff5a1f]" />
+              <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg bg-[#fff0eb] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <FileText size={16} className="text-[#ff5a1f] lg:w-5 lg:h-5" />
               </div>
               <div className="flex-1">
-                <div className="font-bold text-sm text-slate-800 group-hover:text-[#ff5a1f] transition-colors flex items-center justify-between">
+                <div className="font-bold text-[13px] text-slate-800 group-hover:text-[#ff5a1f] transition-colors flex items-center justify-between">
                   {s.label}
-                  <ChevronRight size={16} className="text-[#ff5a1f] opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
+                  <ChevronRight size={14} className="text-[#ff5a1f] opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
                 </div>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">{s.desc}</p>
+                <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{s.desc}</p>
               </div>
             </button>
           ))}
         </div>
       </div>
 
-      <div className="mt-6 lg:mt-8 max-w-3xl mx-auto relative z-10 px-4">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3">What you can do</p>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+      <div className="mt-4 lg:mt-6 max-w-3xl mx-auto relative z-10 px-4">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">What you can do</p>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {USE_CASES.map((u) => (
-            <div key={u.title} className="p-4 lg:p-5 rounded-xl border border-slate-200 bg-white hover:shadow-sm transition-shadow">
-              <u.Icon className="w-5 h-5 lg:w-6 lg:h-6 text-[#ff5a1f] mb-2 lg:mb-3" strokeWidth={2.5} />
-              <p className="font-bold text-slate-800 text-xs lg:text-sm mb-1">{u.title}</p>
-              <p className="text-[10px] lg:text-xs text-slate-500">{u.desc}</p>
+            <div key={u.title} className="p-3 lg:p-4 rounded-xl border border-slate-200 bg-white hover:shadow-sm transition-shadow">
+              <u.Icon className="w-4 h-4 lg:w-5 lg:h-5 text-[#ff5a1f] mb-2" strokeWidth={2.5} />
+              <p className="font-bold text-slate-800 text-[11px] lg:text-[13px] mb-1">{u.title}</p>
+              <p className="text-[9px] lg:text-[11px] text-slate-500 leading-tight">{u.desc}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="mt-6 lg:mt-8 max-w-3xl mx-auto relative z-10 px-4">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3">Example questions</p>
+      <div className="mt-4 lg:mt-6 max-w-3xl mx-auto relative z-10 px-4">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Example questions</p>
         <div className="flex flex-wrap gap-2">
           {EXAMPLE_QUESTIONS.map((q) => (
             <button
               key={q}
               onClick={() => onExample(q)}
-              className="text-xs font-medium px-4 py-2 rounded-full border border-slate-200 text-slate-600 hover:bg-[#fff0eb] hover:text-[#ff5a1f] hover:border-[#ff5a1f]/30 transition-colors"
+              className="text-[11px] font-medium px-3 py-1.5 rounded-full border border-slate-200 text-slate-600 hover:bg-[#fff0eb] hover:text-[#ff5a1f] hover:border-[#ff5a1f]/30 transition-colors"
             >
               {q}
             </button>
@@ -613,8 +613,8 @@ export function DocumentExtraction() {
         </aside>
 
         {/* CHAT */}
-        <main className={`flex-1 overflow-y-auto transition-all ${(!uploadedFile && messages.length <= 1 && !isProcessing) ? 'p-0 flex flex-col justify-center' : 'px-6 py-8'}`}>
-          <div className={`mx-auto ${(!uploadedFile && messages.length <= 1 && !isProcessing) ? 'w-full max-w-[1200px]' : 'max-w-4xl space-y-6'}`}>
+        <main className={`flex-1 overflow-y-auto transition-all ${(!uploadedFile && messages.length <= 1 && !isProcessing) ? 'p-0 flex flex-col' : 'px-6 py-8'}`}>
+          <div className={`mx-auto ${(!uploadedFile && messages.length <= 1 && !isProcessing) ? 'w-full max-w-[1200px] my-auto pt-4 pb-8' : 'max-w-4xl space-y-6'}`}>
             {isProcessing ? (
               <ProcessingState />
             ) : !uploadedFile && messages.length <= 1 ? (
