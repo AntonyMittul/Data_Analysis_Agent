@@ -238,16 +238,6 @@ def _histogram(df, measure):
     return {"title": f"Distribution of {measure}", "figure": _fig_json(fig), "recipe": {"type": "histogram", "measure": measure}}
 
 
-def _correlation_heatmap(df, measures):
-    cols = measures[:8]
-    corr = df[cols].corr(numeric_only=True).round(2)
-    if corr.empty or len(cols) < 3:
-        return None
-    fig = px.imshow(corr, text_auto=True, aspect="auto",
-                    color_continuous_scale="RdBu_r", zmin=-1, zmax=1,
-                    title="Correlation between numeric columns")
-    fig.update_layout(template=TEMPLATE)
-    return {"title": "Correlation between numeric columns", "figure": _fig_json(fig), "recipe": {"type": "heatmap", "measures": measures}}
 
 
 def _scatter(df, m1, m2, color_cat=None):
@@ -291,12 +281,11 @@ def generate_visualizations(df: pd.DataFrame, profile: dict = None):
     You are an expert Data Analyst and Visualization designer.
     Analyze the following dataset metadata and choose up to 7 of the most insightful charts to build.
     
-    Dataset Profile:
+    Dataset Profile (contains statistical summaries and samples of categorical values):
     {json.dumps(profile, indent=2)}
     
     Available time columns (years): {years}
     Available datetime columns: {datetimes}
-    Available geographic columns: {geo_cols}
     
     Return a JSON array of "recipes" for the charts.
     Supported recipe types and their required keys:
@@ -304,12 +293,10 @@ def generate_visualizations(df: pd.DataFrame, profile: dict = None):
     - {{"type": "bar", "measure": "COLUMN_NAME", "cat": "COLUMN_NAME"}}
     - {{"type": "line", "measure": "COLUMN_NAME", "tcol": "TIME_COLUMN_NAME", "is_year": boolean}}
     - {{"type": "histogram", "measure": "COLUMN_NAME"}}
-    - {{"type": "heatmap", "measures": ["COL1", "COL2", "COL3", ...]}} (Requires at least 3 numeric columns)
     - {{"type": "scatter", "m1": "NUM_COL1", "m2": "NUM_COL2", "color_cat": "OPTIONAL_CAT_COL"}}
-    - {{"type": "geo", "geo": "GEO_COLUMN", "measure": "COLUMN_NAME"}}
+    - {{"type": "geo", "geo": "GEO_COLUMN", "measure": "COLUMN_NAME"}} (ONLY use if a column contains actual Countries or States, like "USA", "California". Do NOT use for generic directions/regions like "East", "West" or ambiguous terms)
     
-    Select recipes that make sense for the available columns.
-    OUTPUT ONLY THE JSON ARRAY. NO MARKDOWN. NO EXPLANATION.
+    Select recipes that make sense for the available columns. Output ONLY the JSON array. NO MARKDOWN. NO EXPLANATION.
     """
     
     try:
@@ -355,12 +342,8 @@ def generate_visualizations(df: pd.DataFrame, profile: dict = None):
             plan.append(lambda: _line_trend(df, primary_measure, tcol, is_year))
         if primary_measure:
             plan.append(lambda: _histogram(df, primary_measure))
-        if len(measures) >= 3:
-            plan.append(lambda: _correlation_heatmap(df, measures))
         if len(measures) >= 2:
             plan.append(lambda: _scatter(df, measures[0], measures[1], primary_cat))
-        if geo_cols and primary_measure:
-            plan.append(lambda: _geo_map(df, geo_cols[0], primary_measure))
 
         for build in plan:
             try:
@@ -523,8 +506,6 @@ def build_chart_from_recipe(df: pd.DataFrame, recipe: dict):
         return _line_trend(df, recipe["measure"], recipe["tcol"], recipe["is_year"])
     elif t == "histogram":
         return _histogram(df, recipe["measure"])
-    elif t == "heatmap":
-        return _correlation_heatmap(df, recipe["measures"])
     elif t == "scatter":
         return _scatter(df, recipe["m1"], recipe["m2"], recipe.get("color_cat"))
     elif t == "geo":

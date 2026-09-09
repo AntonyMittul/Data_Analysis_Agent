@@ -24,7 +24,7 @@ def profile_dataset(df):
             useful_categorical.append(col)
 
     # -----------------------------
-    # Summary Statistics
+    # Summary Statistics & Samples
     # -----------------------------
     summary_stats = {}
     for col in useful_numeric[:5]:
@@ -37,6 +37,13 @@ def profile_dataset(df):
         except:
             continue
 
+    categorical_samples = {}
+    for col in useful_categorical:
+        try:
+            categorical_samples[col] = df[col].dropna().unique()[:5].tolist()
+        except:
+            continue
+
     profile = {
         "rows": len(df),
         "columns": df.shape[1],
@@ -44,7 +51,8 @@ def profile_dataset(df):
         "numeric_columns": useful_numeric,
         "categorical_columns": useful_categorical,
         "datetime_columns": datetime_cols,
-        "summary_stats": summary_stats
+        "summary_stats": summary_stats,
+        "categorical_samples": categorical_samples
     }
 
     return profile
