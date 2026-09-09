@@ -25,11 +25,17 @@ def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
 
     for col in df.columns:
         if pd.api.types.is_numeric_dtype(df[col]):
-            df[col] = df[col].fillna(df[col].median())
+            if df[col].isna().any():
+                skewness = df[col].skew()
+                if pd.isna(skewness):
+                    continue
+                
+                if abs(skewness) > 1.0:
+                    df[col] = df[col].fillna(df[col].median())
+                else:
+                    df[col] = df[col].fillna(df[col].mean())
         elif "datetime" in str(df[col].dtype):
             df[col] = pd.to_datetime(df[col], errors="coerce")
-        else:
-            df[col] = df[col].fillna("Unknown")
 
     return df
 
@@ -378,10 +384,24 @@ def build_kpi_cards(df: pd.DataFrame, quality: dict | None = None):
     cards = []
 
 def build_kpi_cards(df: pd.DataFrame, quality: dict | None = None):
-    """Produce 4 information-dense, business-specific KPI cards for the dashboard."""
+    """Produce up to 5 information-dense, business-specific KPI cards for the dashboard."""
+    
+    # Calculate how many rows have at least one missing numeric value before cleaning
+    numeric_cols = df.select_dtypes(include='number').columns
+    imputed_rows = 0
+    if len(numeric_cols) > 0:
+        imputed_rows = int(df[numeric_cols].isna().any(axis=1).sum())
+
     clean = preprocess_data(df)
     measures, categoricals, datetimes, years, ids = classify_columns(clean)
     cards = []
+
+    if imputed_rows > 0:
+        cards.append({
+            "title": "Imputed Rows",
+            "value": _fmt_number(imputed_rows),
+            "icon": "check"
+        })
 
     # 1) Top 2 Numeric Measures (e.g. Total Sales, Total Profit)
     for col in measures[:2]:
@@ -438,8 +458,8 @@ def build_kpi_cards(df: pd.DataFrame, quality: dict | None = None):
                 "icon": "trophy"
             })
 
-    # Limit to max 4 business cards
-    return cards[:4]
+    # Limit to max 5 business cards
+    return cards[:5]
 
 
 # ===============================
