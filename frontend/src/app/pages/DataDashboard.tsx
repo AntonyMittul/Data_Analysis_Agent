@@ -1096,10 +1096,10 @@ const handleChartClick = (chart: ChartData, event: any) => {
                       { label: "Name", value: datasetStats.file_name },
                       { label: "Rows", value: Number(datasetStats.rows || 0).toLocaleString() },
                       { label: "Columns", value: datasetStats.columns },
-                      { label: "Size", value: formatSize(datasetStats.size_kb) },
-                      { label: "Missing Values", value: Number(datasetStats.missing_values || 0).toLocaleString() },
-                      { label: "Uploaded", value: uploadedAt || "—" },
-                      { label: "Last Analyzed", value: lastAnalyzedAt || "—" },
+                      ...(datasetStats.cards || []).map((kpi: any) => ({
+                        label: kpi.title,
+                        value: kpi.value
+                      }))
                     ].map((m) => (
                       <div key={m.label} className="min-w-0">
                         <p className="text-xs text-slate-400">{m.label}</p>
