@@ -58,22 +58,6 @@ def load_dataset(file_path: str, return_quality: bool = False):
                 except:
                     pass
 
-    # -----------------------------
-    # Fill numeric NaNs
-    # -----------------------------
-    numeric_cols = df.select_dtypes(include=["number"]).columns
-
-    for col in numeric_cols:
-        df[col] = df[col].fillna(df[col].median())
-
-    # -----------------------------
-    # Fill categorical NaNs
-    # -----------------------------
-    cat_cols = df.select_dtypes(include=["object"]).columns
-
-    for col in cat_cols:
-        df[col] = df[col].fillna("Unknown")
-
     if return_quality:
         return df, quality
     return df
