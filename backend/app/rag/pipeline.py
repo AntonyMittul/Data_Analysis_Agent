@@ -1,6 +1,6 @@
 from app.rag.retriever import get_retriever
 from app.rag.generator import generate_answer_stream
-from app.rag.vector_store import get_db
+# Removed get_db import
 from app.memory.chat_memory import create_session, add_message, set_title, get_history, get_sessions, session_exists, set_doc_id
 import uuid
 import json
@@ -78,8 +78,8 @@ def _format_history(messages, max_turns: int = 6):
 # ================= MAIN PIPELINE =================
 
 async def rag_pipeline_stream(doc_id, question, session_id=None, file_name=None):
-    db = get_db(doc_id)
-    has_document = db is not None
+    # A valid doc_id implies we have a document (could be multiple comma-separated IDs)
+    has_document = bool(doc_id and doc_id.strip())
     intent = detect_intent(question)
 
     # ---- SESSION MANAGEMENT ----

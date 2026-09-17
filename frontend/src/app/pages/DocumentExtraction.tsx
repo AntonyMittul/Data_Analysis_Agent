@@ -231,7 +231,7 @@ export function DocumentExtraction() {
   const [messages, setMessages] = useState<Message[]>([GREETING]);
 
   const [input, setInput] = useState("");
-  const [uploadedFile, setUploadedFile] = useState<File | { name: string } | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<Array<{ name: string }>>([]);
   const [docId, setDocId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -279,7 +279,7 @@ export function DocumentExtraction() {
   const startNewChat = () => {
     setSessionId(crypto.randomUUID());
     setMessages([GREETING]);
-    setUploadedFile(null);
+    setUploadedFiles([]);
     setDocId(null);
     setShowPdf(false);
     setInput("");
@@ -293,7 +293,7 @@ export function DocumentExtraction() {
       if (data.error) return;
       setSessionId(sid);
       setDocId(data.doc_id || null);
-      setUploadedFile(data.doc_id && data.file_name ? { name: data.file_name } : null);
+      setUploadedFiles(data.doc_id && data.file_name ? data.file_name.split(",").map((n: string) => ({name: n.trim()})) : []);
       const msgs: Message[] = (data.messages || []).map((m: any) => ({
         role: m.role,
         content: m.content,
@@ -328,7 +328,7 @@ export function DocumentExtraction() {
   const isTabular = (name?: string) => !!name && /\.(csv|xlsx|xls)$/i.test(name);
 
   useEffect(() => {
-    const name = uploadedFile?.name;
+    const name = uploadedFiles[0]?.name;
     if (!showPdf || !isTabular(name)) return;
     let cancelled = false;
     (async () => {
@@ -367,7 +367,7 @@ export function DocumentExtraction() {
         setMessages((prev) => [...prev, { role: "assistant", content: `⚠️ ${data.error}` }]);
         return;
       }
-      setUploadedFile({ name: data.file_name || name });
+      setUploadedFiles((data.file_name || name || "").split(",").map((n: string) => ({name: n.trim()})));
       setDocId(data.doc_id);
       setMessages((prev) => [
         ...prev,
@@ -386,46 +386,51 @@ export function DocumentExtraction() {
 
   // ================= FILE UPLOAD =================
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append("file", file);
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
 
     setIsProcessing(true);
+    const newFiles = [...uploadedFiles];
+    const newDocIds = docId ? docId.split(',').filter(Boolean) : [];
 
     try {
-      const res = await fetch(`${API}/documents/upload`, {
-        method: "POST",
-        body: formData
+      const uploadPromises = files.map(async (file) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch(`${API}/documents/upload`, {
+          method: "POST",
+          body: formData
+        });
+        if (!res.ok) throw new Error(`Upload failed for ${file.name}`);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        return { file, data };
       });
 
-      if (!res.ok) throw new Error("Upload failed");
-      const data = await res.json();
-
-      if (data.error) {
-        setMessages(prev => [
-          ...prev,
-          { role: "assistant", content: `⚠️ ${data.error}` }
-        ]);
-        return;
+      const results = await Promise.all(uploadPromises);
+      
+      const successfulNames = [];
+      for (const { file, data } of results) {
+        newFiles.push({ name: file.name });
+        newDocIds.push(data.doc_id || data.id);
+        successfulNames.push(file.name);
       }
 
-      setUploadedFile(file);
-      setDocId(data.doc_id || data.id);
+      setUploadedFiles(newFiles);
+      setDocId(newDocIds.join(','));
 
       setMessages(prev => [
         ...prev,
         {
           role: "assistant",
-          content: `"${file.name}" uploaded successfully. I've indexed the content. What would you like to know?`,
+          content: `Successfully uploaded ${successfulNames.join(", ")}. I've indexed the content. What would you like to know?`,
           hasDocument: true
         }
       ]);
-    } catch (err) {
+    } catch (err: any) {
       setMessages(prev => [
         ...prev,
-        { role: "assistant", content: "⚠️ Document upload failed. Please check the backend connection." }
+        { role: "assistant", content: `⚠️ ${err.message || "Document upload failed. Please check the backend connection."}` }
       ]);
     } finally {
       setIsProcessing(false);
@@ -536,13 +541,13 @@ export function DocumentExtraction() {
         </h1>
 
         <div className="ml-auto flex items-center gap-2">
-          {uploadedFile && (
+          {uploadedFiles.length > 0 && (
             <div
               className="flex items-center gap-2 text-sm font-medium text-[#ff5a1f] bg-[#fff0eb] px-3 py-1 rounded-full cursor-pointer hover:bg-[#ffe4d6] transition"
               onClick={() => setShowPdf(prev => !prev)} // toggle the document viewer
             >
               <FileText size={16} />
-              {uploadedFile.name}
+              {uploadedFiles[0]?.name}
             </div>
           )}
           <ThemeToggle />
@@ -613,11 +618,11 @@ export function DocumentExtraction() {
         </aside>
 
         {/* CHAT */}
-        <main className={`flex-1 overflow-y-auto transition-all ${(!uploadedFile && messages.length <= 1 && !isProcessing) ? 'p-0 flex flex-col' : 'px-6 py-8'}`}>
-          <div className={`mx-auto ${(!uploadedFile && messages.length <= 1 && !isProcessing) ? 'w-full max-w-[1200px] my-auto pt-4 pb-8' : 'max-w-4xl space-y-6'}`}>
+        <main className={`flex-1 overflow-y-auto transition-all ${(uploadedFiles.length === 0 && messages.length <= 1 && !isProcessing) ? 'p-0 flex flex-col' : 'px-6 py-8'}`}>
+          <div className={`mx-auto ${(uploadedFiles.length === 0 && messages.length <= 1 && !isProcessing) ? 'w-full max-w-[1200px] my-auto pt-4 pb-8' : 'max-w-4xl space-y-6'}`}>
             {isProcessing ? (
               <ProcessingState />
-            ) : !uploadedFile && messages.length <= 1 ? (
+            ) : uploadedFiles.length === 0 && messages.length <= 1 ? (
               <DocEmptyState
                 onUseSample={useSample}
                 onExample={(q) => setInput(q)}
@@ -638,7 +643,7 @@ export function DocumentExtraction() {
                   {message.hasDocument && (
                     <div className="flex items-center gap-2 text-xs mb-2 font-semibold uppercase tracking-wider opacity-70">
                       <Paperclip size={12} />
-                      Context: {uploadedFile?.name}
+                      Context: {uploadedFiles.length > 1 ? `${uploadedFiles.length} files` : uploadedFiles[0]?.name}
                     </div>
                   )}
 
@@ -696,21 +701,21 @@ export function DocumentExtraction() {
         {/* DOCUMENT VIEWER (PDF/TXT inline, data table for CSV/Excel, fallback otherwise) */}
         {showPdf && uploadedFile && (
           <div className="w-1/2 border-l border-slate-200 bg-white overflow-hidden">
-            {/\.(pdf|txt)$/i.test(uploadedFile.name) ? (
+            {/\.(pdf|txt)$/i.test(uploadedFiles[0]?.name) ? (
               <iframe
-                key={`${uploadedFile.name}-${pdfPage ?? 1}`}
-                src={`${API}/uploads/${encodeURIComponent(uploadedFile.name)}${
-                  /\.pdf$/i.test(uploadedFile.name) && pdfPage ? `#page=${pdfPage}` : ""
+                key={`${uploadedFiles[0]?.name}-${pdfPage ?? 1}`}
+                src={`${API}/uploads/${encodeURIComponent(uploadedFiles[0]?.name)}${
+                  /\.pdf$/i.test(uploadedFiles[0]?.name) && pdfPage ? `#page=${pdfPage}` : ""
                 }`}
                 title="Document Viewer"
                 className="w-full h-full"
               />
-            ) : isTabular(uploadedFile.name) ? (
+            ) : isTabular(uploadedFiles[0]?.name) ? (
               <div className="h-full flex flex-col">
                 <div className="px-4 py-3 border-b border-slate-200 flex items-center gap-2">
                   <FileText size={16} className="text-[#ff5a1f] shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-800 truncate">{uploadedFile.name}</p>
+                    <p className="text-sm font-semibold text-slate-800 truncate">{uploadedFiles[0]?.name}</p>
                     <p className="text-xs text-slate-400">
                       Showing first {previewRows.length} rows · {previewCols.length} columns
                     </p>
@@ -754,7 +759,7 @@ export function DocumentExtraction() {
             ) : (
               <div className="flex flex-col items-center justify-center h-full p-8 text-center text-slate-500">
                 <FileText size={48} className="mb-4 text-[#ff5a1f]/60" />
-                <p className="font-medium text-slate-700">{uploadedFile.name}</p>
+                <p className="font-medium text-slate-700">{uploadedFiles[0]?.name}</p>
                 <p className="text-sm mt-2">
                   Inline preview isn't available for this file type, but its
                   content has been indexed — ask your questions in the chat.
@@ -769,7 +774,7 @@ export function DocumentExtraction() {
         <div className="max-w-4xl mx-auto">
 
           {/* One-click analysis actions (shown once a document is loaded) */}
-          {uploadedFile && (
+          {uploadedFiles.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
               {QUICK_ACTIONS.map((a) => (
                 <button
@@ -790,7 +795,7 @@ export function DocumentExtraction() {
               ref={fileInputRef}
               type="file"
               accept=".pdf,.txt,.csv,.docx,.xlsx,.xls,application/pdf,text/plain,text/csv,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-              onChange={handleFileUpload}
+              onChange={handleFileUpload} multiple
               className="hidden"
             />
 
@@ -809,7 +814,7 @@ export function DocumentExtraction() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder={uploadedFile ? "Ask a specific question..." : "Ask anything or upload a document..."}
+                placeholder={uploadedFiles.length > 0 ? "Ask a specific question..." : "Ask anything or upload a document..."}
                 disabled={isStreaming}
                 className="w-full bg-slate-100 border-none rounded-2xl pl-12 pr-5 py-3 focus:ring-2 focus:ring-[#ff5a1f] outline-none transition-all disabled:opacity-50"
               />
