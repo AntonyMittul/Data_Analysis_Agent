@@ -1,6 +1,4 @@
-from fastapi import APIRouter
-from concurrent.futures import ThreadPoolExecutor
-import threading
+from fastapi import APIRouter, BackgroundTasks
 import json
 import os
 
@@ -47,7 +45,7 @@ def generate_insights_background(file_path, profile, charts):
 
 
 @router.get("/analyze")
-def analyze_dataset(file_path: str, filters: str = None, with_insights: bool = True):
+def analyze_dataset(file_path: str, background_tasks: BackgroundTasks, filters: str = None, with_insights: bool = True):
     try:
         df_full, quality = load_dataset(file_path, return_quality=True)
 
@@ -84,9 +82,7 @@ def analyze_dataset(file_path: str, filters: str = None, with_insights: bool = T
         profile = profile_dataset(df)
         
         # Generate dynamic visualizations based on the AI's understanding of the dataset profile
-        with ThreadPoolExecutor() as executor:
-            future_charts = executor.submit(generate_visualizations, df, profile)
-            charts = future_charts.result()
+        charts = generate_visualizations(df, profile)
 
         # Build the structured-data context the data-chat agent will use.
         from app.agents.structured_agent import StructuredDataAgent
@@ -109,10 +105,7 @@ def analyze_dataset(file_path: str, filters: str = None, with_insights: bool = T
         # Regenerate the executive summary only when asked (initial analyze).
         # Filter changes skip this to stay instant and avoid extra LLM calls.
         if with_insights:
-            threading.Thread(
-                target=generate_insights_background,
-                args=(file_path, profile, charts)
-            ).start()
+            background_tasks.add_task(generate_insights_background, file_path, profile, charts)
 
         return {
             "status": "success",
